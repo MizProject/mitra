@@ -1,0 +1,19 @@
+{
+  "dependencies": {
+    "body-parser": "^2.2.0",
+    "bulma": "^1.0.4",
+    "dotenv": "^17.2.3",
+    "express": "^5.1.0",
+    "fontawesome": "^5.6.3",
+    "html5-qrcode": "^2.3.8",
+    "nodemon": "^3.1.11",
+    "sequelize": "^6.37.7",
+    "sqlite3": "^5.1.7"
+  },
+  "scripts": {
+    "start": "node runtime.js",
+    "dev-setup": "nodemon setup.js --debug",
+    "dev-runtime": "nodemon runtime.js",
+    "one-time-setup": "node setup.js"
+  }
+}
