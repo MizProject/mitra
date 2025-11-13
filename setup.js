@@ -129,7 +129,10 @@ debugLogWriteToFile("Custom Assets are being hosted as static assets at /assets/
 
 
 // Frontend setup here
-
+// 1. Root would be index
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'setup/index.html'))
+})
 
 
 // API Calls here
