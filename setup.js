@@ -17,7 +17,7 @@ let argenv = process.argv.slice(2);
 
 // Check if being run by nodemon
 if (argenv.includes('--debug')) {
-    console.log("Setup is being run by nodemon.");
+    console.log("Setup is being run with --debug flag.");
     console.log("Which means, its being run in development mode.");
     console.log("Enabling extreme debug logging for development.");
     debugMode = true; // This was a const, changed to let.
@@ -103,7 +103,7 @@ const express = require('express');
 debugLogWriteToFile("Express module loaded.");
 const app = express();
 const port = 7500;
-debugLogWriteToFile(`Express app initialized on port ${port}.`);
+debugLogWriteToFile(`Express app configured to listen on port ${port}.`);
 const bodyParser = require('body-parser');
 debugLogWriteToFile("Body-Parser module loaded.");
 const sequelize = require('sequelize');
@@ -113,8 +113,8 @@ debugLogWriteToFile("SQLite3 module loaded.");
 
 // Make express Listen to network port
 app.listen(port, () => {
-    debugLogWriteToFile(`Mitra Setup server is running on port ${port}`);
-    console.log(`Mitra Setup server is running on port ${port}`);
+    debugLogWriteToFile(`Mitra Setup server is running on port ${port} and under the IP: http://localhost:${port}/`);
+    console.log(`Mitra Setup server is running on port ${port} and under the IP: http://localhost:${port}/`);
 })
 
 // NPM packages, hosted as static, under /assets/npm
