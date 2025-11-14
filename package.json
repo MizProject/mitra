@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "bcrypt": "^6.0.0",
     "body-parser": "^2.2.0",
     "bulma": "^1.0.4",
     "dotenv": "^17.2.3",

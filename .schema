@@ -16,3 +16,19 @@ CREATE TABLE admin_login (
     date_of_enrollment DATETIME DEFAULT CURRENT_TIMESTAMP,
     last_login_time DATETIME
 );
+
+
+-- SQLITE TABLE FOR BENCHMARK/TEST
+
+CREATE TABLE benchmark_test (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    col_text1 TEXT,
+    col_text2 TEXT,
+    col_int1 INTEGER,
+    col_int2 INTEGER,
+    col_real1 REAL,
+    col_real2 REAL,
+    col_blob1 BLOB,
+    col_date1 DATE,
+    col_bool1 BOOLEAN
+);

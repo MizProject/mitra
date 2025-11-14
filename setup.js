@@ -110,6 +110,10 @@ const sequelize = require('sequelize');
 debugLogWriteToFile("Sequelize module loaded.");
 const sqlite3 = require('sqlite3').verbose();
 debugLogWriteToFile("SQLite3 module loaded.");
+const bcrypt = require('bcrypt');
+debugLogWriteToFile("Bcrypt module loaded.");
+const saltRounds = 10;
+debugLogWriteToFile(`Bcrypt Salt rounds set to ${saltRounds}.`)
 
 // Make express Listen to network port
 app.listen(port, () => {
@@ -137,5 +141,181 @@ app.get('/', (req, res) => {
 
 // API Calls here
 
+const dbPath = path.join(__dirname, 'database.sqlite'); // Remember that database.sqlite is at root project dir, do not modify unless if you switch the database tables
+const db = new sqlite3.Database(dbPath, (err) => {
+    if (err) {
+        console.error(`Error opening database ${dbPath}: ${err.message}`);
+        debugLogWriteToFile(`Error opening database ${dbPath}: ${err.message}`);
+    } else {
+        console.log(`Successfully connected to database ${dbPath}`);
+        debugLogWriteToFile(`Successfully connected to database ${dbPath}`);
+        // Create benchmark table if it doesn't exist
+        // Meant to autospawn
+        db.run(`CREATE TABLE IF NOT EXISTS benchmark_test (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            col_text1 TEXT,
+            col_text2 TEXT,
+            col_int1 INTEGER,
+            col_int2 INTEGER,
+            col_real1 REAL,
+            col_real2 REAL,
+            col_blob1 BLOB,
+            col_date1 DATE,
+            col_bool1 BOOLEAN
+        )`, (err) => {
+            if (err) {
+                console.error(`Error creating table: ${err.message}`);
+                debugLogWriteToFile(`Error creating table: ${err.message}`);
+            }
+        });
+    }
+});
+
+app.use(bodyParser.json());
+
+app.post('/api/test-db', (req, res) => {
+    debugLogWriteToFile("Received request for /api/test-db");
+    const insert = 'INSERT INTO benchmark_test (col_text1, col_text2, col_int1) VALUES (?,?,?)';
+    db.run(insert, ["test_data", `random_text_${Math.random()}`, Math.floor(Math.random() * 1000)], function(err) {
+        if (err) {
+            return console.error(err.message);
+        }
+        debugLogWriteToFile(`A row has been inserted with rowid ${this.lastID}`);
+        db.all("SELECT * FROM benchmark_test", [], (err, rows) => {
+            if (err) {
+                res.status(500).json({ "error": err.message });
+                return;
+            }
+            res.json({
+                message: "success",
+                data: rows
+            });
+        });
+    });
+});
+
+app.post('/api/benchmark/sequential-write', (req, res) => {
+    const insert = 'INSERT INTO benchmark_test (col_text1, col_text2, col_int1) VALUES (?,?,?)';
+    db.run(insert, ["seq_write", `random_text_${Math.random()}`, Math.floor(Math.random() * 1000)], function(err) {
+        if (err) {
+            res.status(500).json({ "error": err.message });
+            return console.error(err.message);
+        }
+        res.json({ message: "success", id: this.lastID });
+    });
+});
+
+app.post('/api/benchmark/bulk-write', (req, res) => {
+    const records = req.body.records;
+    if (!records || !Array.isArray(records)) {
+        return res.status(400).json({ error: "Invalid payload. 'records' array not found." });
+    }
+
+    const insert = db.prepare('INSERT INTO benchmark_test (col_text1, col_text2, col_int1) VALUES (?,?,?)');
+    db.serialize(() => {
+        db.run("BEGIN TRANSACTION");
+        records.forEach(record => {
+            insert.run(record.col_text1, record.col_text2, record.col_int1);
+        });
+        db.run("COMMIT", (err) => {
+            if (err) {
+                res.status(500).json({ "error": err.message });
+                return console.error(err.message);
+            }
+            res.json({ message: "success", count: records.length });
+        });
+    });
+    insert.finalize();
+});
+
+app.get('/api/benchmark/read-all', (req, res) => {
+    db.all("SELECT id FROM benchmark_test", [], (err, rows) => {
+        if (err) {
+            res.status(500).json({ "error": err.message });
+            return;
+        }
+        res.json({ message: "success", data: rows });
+    });
+});
+
+app.post('/api/benchmark/cleanup', (req, res) => {
+    db.run('DELETE FROM benchmark_test', function(err) {
+        if (err) {
+            res.status(500).json({ "error": err.message });
+            return console.error(err.message);
+        }
+        // Reset autoincrement counter
+        db.run("DELETE FROM sqlite_sequence WHERE name='benchmark_test'", (err) => {
+            debugLogWriteToFile(`Cleanup complete for benchmark_test. ${this.changes} rows deleted.`);
+            res.json({ message: "success", deleted_rows: this.changes });
+        });
+    });
+});
+
+app.post('/api/create-admin', async (req, res) => {
+    const { username, password, recovery_code } = req.body;
+
+    if (!username || !password) {
+        return res.status(400).json({ error: "Username and password are required." });
+    }
+
+    try {
+        const hashedPassword = await bcrypt.hash(password, saltRounds);
+
+        const insert = 'INSERT INTO admin_login (username, password, recovery_code, privilege) VALUES (?, ?, ?, ?)';
+        db.run(insert, [username, hashedPassword, recovery_code, 'admin'], function(err) {
+            if (err) {
+                console.error(err.message);
+                return res.status(500).json({ error: err.message });
+            }
+
+            debugLogWriteToFile(`Admin account created with rowid ${this.lastID}`);
+            res.json({
+                message: "Admin account created successfully",
+                adminId: this.lastID
+            });
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: "Failed to hash password" });
+    }
+});
+
+app.post('/api/login', (req, res) => {
+    const { username, password } = req.body;
+
+    if (!username || !password) {
+        return res.status(400).json({ error: "Username and password are required." });
+    }
+
+    const sql = 'SELECT * FROM admin_login WHERE username = ?';
+
+    db.get(sql, [username], async (err, row) => {
+        if (err) {
+            console.error(err.message);
+            return res.status(500).json({ error: err.message });
+        }
+
+        // If no user is found, or if a password comparison is needed
+        if (!row) {
+            return res.status(401).json({ error: "Invalid username or password." });
+        }
+
+        try {
+            const match = await bcrypt.compare(password, row.password);
+
+            if (match) {
+                debugLogWriteToFile(`Successful login for user: ${username}`);
+                res.json({ message: "Login successful!" });
+            } else {
+                res.status(401).json({ error: "Invalid username or password." });
+            }
+        } catch (error) {
+            console.error(error);
+            res.status(500).json({ error: "Error during authentication." });
+        }
+    });
+});
 
 // Redundancy configuration here
+// Somewhat unrelated to the mitra env, but maybe-maybe?
