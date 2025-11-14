@@ -1,0 +1,18 @@
+-- Mitra's DB Structure with SQLite
+-- Do not run this to sqlite, just copy the code from here
+
+-- SQLITE TABLE FOR ADMIN
+
+CREATE TABLE admin_login (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    username TEXT UNIQUE NOT NULL,
+    password TEXT NOT NULL,              -- store encrypted/hashed password
+    recovery_code TEXT,                  -- encrypted recovery code
+    twoauth_activation INTEGER,          -- 0 = disabled, 1 = enabled (nullable)
+    twoauth_code TEXT,                   -- encrypted or hashed 2FA code
+    privilege TEXT NOT NULL CHECK (
+        privilege IN ('admin', 'accountant', 'order processor', 'on hold', 'revoked')
+    ),
+    date_of_enrollment DATETIME DEFAULT CURRENT_TIMESTAMP,
+    last_login_time DATETIME
+);

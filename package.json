@@ -5,6 +5,7 @@
     "dotenv": "^17.2.3",
     "express": "^5.1.0",
     "fontawesome": "^5.6.3",
+    "fontawesome-free": "^1.0.4",
     "html5-qrcode": "^2.3.8",
     "nodemon": "^3.1.11",
     "sequelize": "^6.37.7",
@@ -12,7 +13,8 @@
   },
   "scripts": {
     "start": "node runtime.js",
-    "dev-setup": "nodemon setup.js --debug",
+    "dev-setup-debug": "nodemon setup.js --debug",
+    "dev-setup": "nodemon setup.js",
     "dev-runtime": "nodemon runtime.js",
     "one-time-setup": "node setup.js"
   }
