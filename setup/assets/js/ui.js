@@ -380,6 +380,12 @@ function interactivePaging(page, target) {
                 const secondaryCard = document.getElementById('color-picker-card-secondary');
                 const secondaryButton = document.getElementById('color-picker-button-secondary');
 
+                // If these elements don't exist (because we are on a different page),
+                // just exit the event handler.
+                if (!primaryCard || !secondaryCard) {
+                    return;
+                }
+
                 let clickedInsidePrimary = primaryCard.contains(e.target) || e.target === primaryButton;
                 let clickedInsideSecondary = secondaryCard.contains(e.target) || e.target === secondaryButton;
 
@@ -389,6 +395,57 @@ function interactivePaging(page, target) {
                 if (!clickedInsideSecondary) {
                     secondaryCard.style.display = 'none';
                 }
+            });
+            break;
+        case 4:
+            // E-commerce / Servicing Setup
+            target.innerHTML = `
+                <h2 class="title is-3 has-text-centered">Select Services to Offer</h2>
+                <p class="subtitle is-6 has-text-centered">Choose the types of services your business will provide. This will set up the necessary database tables.</p>
+
+                <div class="field" id="service-options-container">
+                    <label class="checkbox">
+                        <input type="checkbox" value="hotel"> Hotel / Accomodation
+                    </label><br>
+                    <label class="checkbox">
+                        <input type="checkbox" value="repair"> Tech Repair
+                    </label><br>
+                    <label class="checkbox">
+                        <input type="checkbox" value="food"> Food & Restaurant
+                    </label><br>
+                    <label class="checkbox">
+                        <input type="checkbox" value="laundry"> Laundry Service
+                    </label><br>
+                </div>
+
+                <div class="buttons is-centered" style="margin-top: 20px;">
+                    <button class="button is-primary" id="setup-servicing-button">
+                        <span class="icon"><i class="fas fa-cogs"></i></span>
+                        <span>Initialize Services</span>
+                    </button>
+                </div>
+                <div class="notification is-hidden" id="servicing-status-box"></div>
+            `;
+
+            const setupBtn = document.getElementById('setup-servicing-button');
+            const servicingStatusBox = document.getElementById('servicing-status-box');
+
+            setupBtn.addEventListener('click', async () => {
+                setupBtn.classList.add('is-loading');
+                servicingStatusBox.className = 'notification is-info is-hidden';
+
+                const selectedServices = Array.from(document.querySelectorAll('#service-options-container input:checked')).map(cb => cb.value);
+
+                if (selectedServices.length === 0) {
+                    servicingStatusBox.textContent = 'Please select at least one service type to initialize.';
+                    servicingStatusBox.className = 'notification is-warning';
+                    setupBtn.classList.remove('is-loading');
+                    return;
+                }
+
+                // This function will be defined in a new file: service-setup.js
+                await setupServiceTables(selectedServices, servicingStatusBox);
+                setupBtn.classList.remove('is-loading');
             });
             break;
     }
@@ -564,7 +621,7 @@ dynamicBodyCard.addEventListener('click', async (event) => {
 
 if (nextBtn) {
     nextBtn.addEventListener('click', () => {
-        page = Math.min(page + 1, 3); // Adjusted max page number
+        page = Math.min(page + 1, 4); // Adjusted max page number
         interactivePaging(page, dynamicBodyCard);
     });
 };

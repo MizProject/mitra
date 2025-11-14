@@ -435,5 +435,60 @@ app.post('/api/save-site-config', upload.fields([{ name: 'logo', maxCount: 1 }, 
     });
 });
 
+app.post('/api/setup-servicing-tables', (req, res) => {
+    debugLogWriteToFile("Received request to set up servicing tables.");
+    const { services: selectedServices } = req.body;
+
+    if (!selectedServices || !Array.isArray(selectedServices) || selectedServices.length === 0) {
+        return res.status(400).json({ error: 'An array of selected services is required.' });
+    }
+
+    const coreTables = ['services', 'bookings', 'booking_items', 'service_availability'];
+    
+    const schemaPath = path.join(__dirname, '.servicing_vischem.sql');
+    fs.readFile(schemaPath, 'utf8', (err, sqlScript) => {
+        if (err) {
+            console.error(`Error reading schema file: ${err.message}`);
+            debugLogWriteToFile(`Error reading schema file: ${err.message}`);
+            return res.status(500).json({ error: 'Could not read the servicing schema file.' });
+        }
+
+        // Split the script into individual statements. This handles comments and multiple lines.
+        const statements = sqlScript.split(';').filter(s => s.trim().length > 0);
+        let filteredScript = '';
+
+        statements.forEach(statement => {
+            // First, remove comments from the statement to reliably check its start.
+            const cleanStatement = statement.replace(/--.*$/gm, '').trim();
+            if (cleanStatement.length === 0) return;
+
+            const statementTrimmed = cleanStatement.toLowerCase();
+            if (statementTrimmed.startsWith('create table')) {
+                // Use a regex to robustly find the table name after "CREATE TABLE"
+                // It handles "IF NOT EXISTS" and varying whitespace.
+                const match = statementTrimmed.match(/create table(?:\s+if\s+not\s+exists)?\s+`?([a-z0-9_]+)`?/);
+                if (!match) return;
+                const tableName = match[1];
+                // Check if it's a core table or a selected service details table
+                if (coreTables.includes(tableName) || (tableName.startsWith('service_details_') && selectedServices.includes(tableName.substring('service_details_'.length)))) {
+                    filteredScript += statement + ';\n';
+                }
+            }
+        });
+
+        db.exec(filteredScript, function(err) {
+            if (err) {
+                console.error(`Error executing servicing schema: ${err.message}`);
+                debugLogWriteToFile(`Error executing servicing schema: ${err.message}`);
+                return res.status(500).json({ error: `Failed to create servicing tables: ${err.message}` });
+            }
+
+            const createdCount = (filteredScript.match(/CREATE TABLE/gi) || []).length;
+            debugLogWriteToFile(`Servicing tables created successfully (${createdCount} tables).`);
+            res.json({ message: `Successfully created ${createdCount} e-commerce service tables.` });
+        });
+    });
+});
+
 // Redundancy configuration here
 // Somewhat unrelated to the mitra env, but maybe-maybe?
