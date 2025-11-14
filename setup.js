@@ -11,6 +11,7 @@ const windows_path = require('path/win32');
 const mkdirp = require('mkdirp');
 
 // Global variables
+const crypto = require('crypto');
 let debugMode = false;
 let logFilePath;
 let argenv = process.argv.slice(2);
@@ -387,6 +388,40 @@ app.post('/api/save-colors', (req, res) => {
             return res.status(500).json({ error: err.message });
         }
         res.json({ message: "Color configuration saved successfully." });
+    });
+});
+
+app.post('/api/validate-recovery-code', (req, res) => {
+    debugLogWriteToFile("Received request for /api/validate-recovery-code");
+    const { username, recovery_code } = req.body;
+
+    if (!username || !recovery_code) {
+        return res.status(400).json({ error: "Username and recovery code are required." });
+    }
+
+    const sql = 'SELECT recovery_code FROM admin_login WHERE username = ?';
+    db.get(sql, [username], (err, row) => {
+        if (err) {
+            console.error(err.message);
+            return res.status(500).json({ error: "Database error during recovery." });
+        }
+
+        if (!row || !row.recovery_code) {
+            // Respond with a generic error to prevent username enumeration
+            return res.status(401).json({ error: "Invalid username or recovery code." });
+        }
+
+        // Constant-time comparison to mitigate timing attacks
+        const storedCodeBuffer = Buffer.from(row.recovery_code);
+        const providedCodeBuffer = Buffer.from(recovery_code);
+
+        if (storedCodeBuffer.length !== providedCodeBuffer.length) {
+            return res.status(401).json({ error: "Invalid username or recovery code." });
+        }
+
+        const match = crypto.timingSafeEqual(storedCodeBuffer, providedCodeBuffer);
+
+        res.json({ success: match, message: match ? "Recovery code is valid." : "Invalid username or recovery code." });
     });
 });
 

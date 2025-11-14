@@ -443,12 +443,42 @@ function interactivePaging(page, target) {
                     return;
                 }
 
+                // Store for use on the final page
+                sessionStorage.setItem('selectedServices', JSON.stringify(selectedServices));
+
                 // This function will be defined in a new file: service-setup.js
                 await setupServiceTables(selectedServices, servicingStatusBox);
                 setupBtn.classList.remove('is-loading');
             });
             break;
-    }
+        case 5:
+            target.innerHTML = `
+                <div class="has-text-centered">
+                    <span class="icon is-large has-text-success">
+                        <i class="fas fa-check-circle fa-3x"></i>
+                    </span>
+                </div>
+                <h2 class="title is-3 has-text-centered" style="margin-top: 1rem;">Setup Complete!</h2>
+                <p class="has-text-centered" id="success-message">You have successfully configured Mitra.</p>
+                <p class="has-text-centered">You may now close this setup server and run the main application.</p>
+            `;
+
+            // Personalize the success message with selected services
+            const successMessage = document.getElementById('success-message');
+            const servicesString = sessionStorage.getItem('selectedServices');
+            if (servicesString) {
+                const services = JSON.parse(servicesString);
+                if (services.length > 0) {
+                    const formattedServices = services.join(', ').replace(/, ([^,]*)$/, ' and $1');
+                    successMessage.innerHTML = `You have successfully configured Mitra for your <strong>${formattedServices}</strong> service(s).`;
+                }
+            }
+
+            // Hide navigation buttons on the final page
+            document.getElementById('next-btn').style.display = 'none';
+            document.getElementById('back-btn').style.display = 'none';
+            break;
+    };
 };
 
 function createBenchmarkModal() {
@@ -541,6 +571,35 @@ function displayBenchmarkResults(results) {
     `;
 }
 
+function showRecoveryCodeModal(recoveryCode) {
+    const modalHTML = `
+        <div class="modal is-active" id="recovery-code-modal">
+            <div class="modal-background"></div>
+            <div class="modal-card">
+                <header class="modal-card-head">
+                    <p class="modal-card-title">Admin Account Recovery Code</p>
+                    <button class="delete" aria-label="close"></button>
+                </header>
+                <section class="modal-card-body">
+                    <p>Your admin account has been created successfully.</p>
+                    <p>Your recovery code is displayed below. <strong>Please save this code in a secure location.</strong> You will not be able to see it again.</p>
+                    <div class="notification is-warning has-text-centered">
+                        <p class="title is-4" id="recovery-code-display">${recoveryCode}</p>
+                    </div>
+                    <p>This code can be used to reset your password if you forget it.</p>
+                </section>
+                <footer class="modal-card-foot" style="justify-content: flex-end;">
+                    <button class="button is-success" id="close-recovery-modal">I have saved my code</button>
+                </footer>
+            </div>
+        </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+    const modal = document.getElementById('recovery-code-modal');
+    const closeModal = () => modal.remove();
+    modal.querySelector('.delete').addEventListener('click', closeModal);
+    modal.querySelector('#close-recovery-modal').addEventListener('click', closeModal);
+};
 
 window.addEventListener('DOMContentLoaded', (event) => {
     // Assets should be fetched first
@@ -621,7 +680,7 @@ dynamicBodyCard.addEventListener('click', async (event) => {
 
 if (nextBtn) {
     nextBtn.addEventListener('click', () => {
-        page = Math.min(page + 1, 4); // Adjusted max page number
+        page = Math.min(page + 1, 5); // Adjusted max page number
         interactivePaging(page, dynamicBodyCard);
     });
 };
@@ -659,7 +718,8 @@ dynamicBodyCard.addEventListener('click', async (event) => {
             return;
         }
         
-        const recovery_code = recoveryCheckbox.checked ? Math.random().toString(36).slice(-8) : null;
+        // Generate a 6-character uppercase alphanumeric code
+        const recovery_code = recoveryCheckbox.checked ? Math.random().toString(36).substring(2, 8).toUpperCase() : null;
 
         // Call the new streamlined function from authenticate.js
         const result = await createAdminAccount(username, password, recovery_code);
@@ -667,6 +727,9 @@ dynamicBodyCard.addEventListener('click', async (event) => {
         if (result.ok) {
             authStatus.textContent = `Admin account "${username}" created successfully! You can now check authentication.`;
             authStatus.className = 'help is-success';
+            if (recovery_code) {
+                showRecoveryCodeModal(recovery_code);
+            }
         } else { // No 'finally' keyword needed here
             authStatus.textContent = `Error: ${result.error}`;
             authStatus.className = 'help is-danger';
