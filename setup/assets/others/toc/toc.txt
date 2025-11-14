@@ -1,0 +1,92 @@
+Mitra Software Terms and Conditions of Use
+Effective: 13 November, 2025
+
+MITRA SOFTWARE
+
+These Terms and Conditions ("Terms") govern the access and use of the Mitra software ("Mitra" or "Software"), a free, open-source tool designed to help small businesses establish an online presence. By accessing, downloading, or using the Software, you ("User" or "End Customer") agree to be bound by these Terms.
+
+1. Status, Licensing, and Distribution
+
+1.1 Project Status
+
+Mitra is developed and maintained by a small organization operating with near-zero budget. Consequently, bug fixes, updates, and support may be addressed slowly.
+
+1.2 License and Grant of Use
+
+Mitra is provided free of charge for your use and examination. We grant you a non-exclusive, worldwide, royalty-free license to:
+
+Use the Software at your free will for its intended purpose.
+
+Examine the Source Code: The source code is publicly available. Note that submitting changes or code reviews requires a valid GitHub account.
+
+Rebrand and Customize: You are permitted to rebrand the Software to fit your specific style and business needs.
+
+1.3 Restriction on Redistribution
+
+Redistribution of the Software is strictly prohibited. The official and only authorized means to obtain a copy of the Software is via the official GitHub repository located at: https://github.com/MizProject.
+
+2. Disclaimers and No Warranty
+
+2.1 No Warranty (Software Provided "AS IS")
+
+THE SOFTWARE IS PROVIDED "AS IS," WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, including but not limited to the warranties of merchantability, fitness for a particular purpose, and non-infringement. The Mitra organization offers ZERO WARRANTY for the Software.
+
+2.2 Routing and Third-Party Endorsements
+
+Mitra may endorse or recommend certain third-party services, such as Tailscale for secure routing and the establishment of a tailnet.
+
+We are not partnered with Tailscale or any other recommended routing provider.
+
+The use of any recommended routing method is not enforced, and the End Customer is free to use any other secure routing method of their choice.
+
+2.3 Donations
+
+The Software is free to use. However, voluntary donations are accepted via the sponsor button on the official GitHub repository to support the maintenance and development of Mitra. Donations are not required for continued use of the Software.
+
+3. User Responsibility and Data Security
+
+3.1 Protective Measures and Conduct
+
+The End Customer agrees to:
+
+Analyze Actions: Before applying any action or modification to the Mitra system, the User must analyze and perform a study of such actions to prevent unforeseen mishaps, data loss, or system instability.
+
+Protect User Content: The End Customer must exercise protective measures to safeguard any content created or stored using the Software against malicious breaches, unauthorized access, or loss.
+
+3.2 Sensitive Data and Network Security
+
+The Mitra organization is not liable or responsible for sensitive data breaches that may occur while using the Software.
+
+We require and expect the End Customer to perform a network security audit and inspection of their environment and implementation of Mitra at some point to ensure data security.
+
+Security Certificates: We do not provide certificates for encrypting communications. The End Customer is solely responsible for obtaining timed certificates from a reputable provider.
+
+3.3 Data Migration
+
+If the End Customer plans to discontinue use of Mitra (due to upgrades, finding alternatives, etc.) and requires long-term data storage or transfer:
+
+We do not provide any tools whatsoever to transfer business progress, data, or files to an alternative system.
+
+The End Customer is recommended to consult or query the alternative platform’s help documentation or support team to initiate any required data transfer.
+
+4. Reporting Bugs and Issues
+
+If a bug or issue is encountered, the End Customer must provide sufficient information to aid in diagnosis. This required disclosure includes, but is not limited to:
+
+The complete structure of the system if it was modified from the original configuration.
+
+System specifications and Operating System (OS) used.
+
+Date of installation and methods used (e.g., what node version and npm version were utilized).
+
+The exact commands used to run the Software.
+
+Whether the Software was installed in a containerized environment (e.g., Proxmox, Docker).
+
+Details of other external tools or systems that may interact with or affect the Software (e.g., systemd auto-execution scripts).
+
+5. Governing Law and Compliance
+
+5.1 Local Security Protocols
+
+Users operating or residing in the United States or the European Union must ensure they follow the protocol of their respective state or nation in addressing security and data protection measures while using and hosting the Software.
