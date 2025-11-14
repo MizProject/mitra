@@ -114,6 +114,8 @@ const bcrypt = require('bcrypt');
 debugLogWriteToFile("Bcrypt module loaded.");
 const saltRounds = 10;
 debugLogWriteToFile(`Bcrypt Salt rounds set to ${saltRounds}.`)
+const multer = require('multer');
+debugLogWriteToFile("Multer module loaded for file uploads.");
 
 // Make express Listen to network port
 app.listen(port, () => {
@@ -131,12 +133,27 @@ debugLogWriteToFile("Hosting Custom Assets as static assets...");
 app.use('/assets/setup', express.static(path.join(__dirname, 'setup/assets')));
 debugLogWriteToFile("Custom Assets are being hosted as static assets at /assets/setup");
 
+// Runtime Directory
+// For submitting changes
+// Note: uploading images should be at /runtime/data/images/
+debugLogWriteToFile("Hosting Runtime Directory as static assets...");
+const uploadDir = path.join(__dirname, 'runtime/data/images');
+mkdirp.sync(uploadDir); // Ensure the upload directory exists
+debugLogWriteToFile(`Upload directory ensured at: ${uploadDir}`);
+app.use('/runtime/data/images', express.static(uploadDir));
+
+app.use('/runtime', express.static(path.join(__dirname, 'runtime')));
+debugLogWriteToFile("Runtime Directory is being hosted as static assets at /runtime");
+
 
 // Frontend setup here
 // 1. Root would be index
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'setup/index.html'))
 })
+
+// Use body-parser for all API routes below
+app.use(bodyParser.json());
 
 
 // API Calls here
@@ -168,10 +185,42 @@ const db = new sqlite3.Database(dbPath, (err) => {
                 debugLogWriteToFile(`Error creating table: ${err.message}`);
             }
         });
+        // Create page_config table
+        db.run(`CREATE TABLE IF NOT EXISTS page_config (
+            config_id INTEGER PRIMARY KEY DEFAULT 1,
+            page_name TEXT,
+            primary_color TEXT,
+            secondary_color TEXT,
+            banner_image TEXT,
+            page_logo TEXT,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )`, (err) => {
+            if (err) {
+                console.error(`Error creating page_config table: ${err.message}`);
+                debugLogWriteToFile(`Error creating page_config table: ${err.message}`);
+            } else {
+                debugLogWriteToFile(`page_config table checked/created.`);
+            }
+        });
+
+        // Create a trigger to automatically update `updated_at` on row change
+        db.run(`
+            CREATE TRIGGER IF NOT EXISTS update_page_config_updated_at
+            AFTER UPDATE ON page_config
+            FOR EACH ROW
+            BEGIN
+                UPDATE page_config SET updated_at = CURRENT_TIMESTAMP WHERE config_id = OLD.config_id;
+            END;
+        `, (err) => {
+            if (err) {
+                console.error(`Error creating trigger for page_config: ${err.message}`);
+                debugLogWriteToFile(`Error creating trigger for page_config: ${err.message}`);
+            }
+        });
+
+
     }
 });
-
-app.use(bodyParser.json());
 
 app.post('/api/test-db', (req, res) => {
     debugLogWriteToFile("Received request for /api/test-db");
@@ -314,6 +363,75 @@ app.post('/api/login', (req, res) => {
             console.error(error);
             res.status(500).json({ error: "Error during authentication." });
         }
+    });
+});
+
+app.post('/api/save-colors', (req, res) => {
+    debugLogWriteToFile("Received request for /api/save-colors");
+    const { primaryColor, secondaryColor } = req.body;
+
+    if (!primaryColor) {
+        return res.status(400).json({ error: "Primary color is required." });
+    }
+
+    const sql = `
+        INSERT INTO page_config (config_id, primary_color, secondary_color)
+        VALUES (1, ?, ?)
+        ON CONFLICT(config_id) DO UPDATE SET
+            primary_color = excluded.primary_color,
+            secondary_color = excluded.secondary_color;
+    `;
+
+    db.run(sql, [primaryColor, secondaryColor], function(err) {
+        if (err) {
+            return res.status(500).json({ error: err.message });
+        }
+        res.json({ message: "Color configuration saved successfully." });
+    });
+});
+
+// --- Site Configuration (Colors, Name, Files) ---
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        cb(null, uploadDir);
+    },
+    filename: function (req, file, cb) {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        // Use the fieldname from multer (e.g., 'logo', 'banner')
+        cb(null, `${file.fieldname}-${uniqueSuffix}${path.extname(file.originalname)}`);
+    }
+});
+
+const upload = multer({ storage: storage });
+
+app.post('/api/save-site-config', upload.fields([{ name: 'logo', maxCount: 1 }, { name: 'banner', maxCount: 1 }]), (req, res) => {
+    debugLogWriteToFile("Received request for /api/save-site-config");
+    const { siteName, primaryColor, secondaryColor } = req.body;
+
+    if (!siteName || !primaryColor) {
+        return res.status(400).json({ error: "Site name and primary color are required." });
+    }
+
+    const logoFile = req.files['logo'] ? req.files['logo'][0] : null;
+    const bannerFile = req.files['banner'] ? req.files['banner'][0] : null;
+
+    const logoPath = logoFile ? `/runtime/data/images/${logoFile.filename}` : null;
+    const bannerPath = bannerFile ? `/runtime/data/images/${bannerFile.filename}` : null;
+
+    const sql = `
+        INSERT INTO page_config (config_id, page_name, primary_color, secondary_color, page_logo, banner_image)
+        VALUES (1, ?, ?, ?, ?, ?)
+        ON CONFLICT(config_id) DO UPDATE SET
+            page_name = COALESCE(excluded.page_name, page_name),
+            primary_color = COALESCE(excluded.primary_color, primary_color),
+            secondary_color = COALESCE(excluded.secondary_color, secondary_color),
+            page_logo = COALESCE(excluded.page_logo, page_logo),
+            banner_image = COALESCE(excluded.banner_image, banner_image);
+    `;
+
+    db.run(sql, [siteName, primaryColor, secondaryColor, logoPath, bannerPath], function(err) {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ message: "Site configuration saved successfully." });
     });
 });
 

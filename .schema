@@ -32,3 +32,16 @@ CREATE TABLE benchmark_test (
     col_date1 DATE,
     col_bool1 BOOLEAN
 );
+
+
+-- SQLITE TABLE FOR COLORCONF
+
+CREATE TABLE page_config (
+    config_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    page_name TEXT NOT NULL UNIQUE,       -- e.g. "Home", "Login", "Dashboard"
+    primary_color TEXT NOT NULL,          -- HEX or CSS color string
+    secondary_color TEXT,                 -- optional accent color
+    banner_image TEXT,                    -- path or URL to banner image
+    page_logo TEXT,                       -- path or URL to logo image
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);

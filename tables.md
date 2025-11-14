@@ -33,3 +33,17 @@ Do check `./.schema` or [schema file](/.schema) for how it was really made
 |7  |col_blob1|BLOB   |0      |          |0  |
 |8  |col_date1|DATE   |0      |          |0  |
 |9  |col_bool1|BOOLEAN|0      |          |0  |
+
+### Page Config Table
+
+|cid|name           |type    |notnull|dflt_value       |pk |
+|---|---------------|--------|-------|-----------------|---|
+|0  |config_id      |INTEGER |0      |                 |1  |
+|1  |page_name      |TEXT    |1      |                 |0  |
+|2  |primary_color  |TEXT    |1      |                 |0  |
+|3  |secondary_color|TEXT    |0      |                 |0  |
+|4  |banner_image   |TEXT    |0      |                 |0  |
+|5  |page_logo      |TEXT    |0      |                 |0  |
+|6  |updated_at     |DATETIME|0      |CURRENT_TIMESTAMP|0  |
+
+
