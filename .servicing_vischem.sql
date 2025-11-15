@@ -7,12 +7,13 @@
 CREATE TABLE services (
     service_id INTEGER PRIMARY KEY AUTOINCREMENT,
     service_name TEXT NOT NULL,
-    description TEXT,
-    base_price REAL NOT NULL,
     -- The 'service_type' column is crucial. It tells the application
     -- which details table to join with (e.g., 'hotel_room', 'repair', 'food_item').
     service_type TEXT NOT NULL,
-    is_active BOOLEAN DEFAULT 1
+    description TEXT,
+    base_price REAL NOT NULL DEFAULT 0.0,
+    is_active BOOLEAN DEFAULT 1,
+    image_url TEXT
 );
 
 -- Details specific to hotel room services.
@@ -28,8 +29,8 @@ CREATE TABLE service_details_hotel (
 -- Details specific to tech repair services.
 CREATE TABLE service_details_repair (
     service_id INTEGER PRIMARY KEY,
-    device_category TEXT, -- e.g., 'Smartphone', 'Laptop', 'Tablet'
-    estimated_duration_hours REAL,
+    device_category TEXT, -- e.g., 'Smartphone', 'Laptop', 'Tablet',
+    duration_minutes INTEGER,
     warranty_days INTEGER DEFAULT 30,
     FOREIGN KEY (service_id) REFERENCES services (service_id) ON DELETE CASCADE
 );
@@ -54,10 +55,33 @@ CREATE TABLE service_details_laundry (
 -- Main table for customer bookings/orders.
 CREATE TABLE bookings (
     booking_id INTEGER PRIMARY KEY AUTOINCREMENT,
-    customer_id INTEGER, -- This would link to a 'customers' table
+    customer_id INTEGER,
     booking_date DATETIME DEFAULT CURRENT_TIMESTAMP,
     total_price REAL,
-    status TEXT NOT NULL DEFAULT 'Pending' -- e.g., 'Pending', 'Confirmed', 'In Progress', 'Completed', 'Cancelled'
+    status TEXT NOT NULL DEFAULT 'Pending', -- e.g., 'Pending', 'Confirmed', 'In Progress', 'Completed', 'Cancelled'
+    FOREIGN KEY (customer_id) REFERENCES customers (customer_id) ON DELETE SET NULL
+);
+
+-- Table for customer user accounts.
+CREATE TABLE customers (
+    customer_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    email TEXT NOT NULL UNIQUE,
+    password_hash TEXT NOT NULL,
+    first_name TEXT,
+    last_name TEXT,
+    phone_number TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Table for promotional banners shown on the home page.
+CREATE TABLE promotion_banners (
+    banner_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    banner_name TEXT NOT NULL,
+    image_url TEXT NOT NULL,
+    link_url TEXT, -- Optional: URL to navigate to when banner is clicked
+    display_order INTEGER DEFAULT 0,
+    is_active BOOLEAN DEFAULT 1,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Links services to a specific booking. A single booking can have multiple items.

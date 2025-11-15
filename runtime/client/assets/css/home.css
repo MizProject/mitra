@@ -1,0 +1,10 @@
+/* Service Card Styles */
+.service-card {
+    display: flex;
+    flex-direction: column;
+    height: 100%; /* Make cards in a row equal height */
+}
+
+.service-card .card-content {
+    flex-grow: 1; /* Allows content to fill space, pushing footer down */
+}

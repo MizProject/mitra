@@ -47,3 +47,27 @@ Do check `./.schema` or [schema file](/.schema) for how it was really made
 |6  |updated_at     |DATETIME|0      |CURRENT_TIMESTAMP|0  |
 
 
+### Customers table
+
+|cid|name         |type    |notnull|dflt_value       |pk |
+|---|-------------|--------|-------|-----------------|---|
+|0  |customer_id  |INTEGER |0      |                 |1  |
+|1  |email        |TEXT    |1      |                 |0  |
+|2  |password_hash|TEXT    |1      |                 |0  |
+|3  |first_name   |TEXT    |0      |                 |0  |
+|4  |last_name    |TEXT    |0      |                 |0  |
+|5  |phone_number |TEXT    |0      |                 |0  |
+|6  |created_at   |DATETIME|0      |CURRENT_TIMESTAMP|0  |
+
+
+### Banners
+
+|cid|name         |type    |notnull|dflt_value       |pk |
+|---|-------------|--------|-------|-----------------|---|
+|0  |banner_id    |INTEGER |0      |                 |1  |
+|1  |banner_name  |TEXT    |1      |                 |0  |
+|2  |image_url    |TEXT    |1      |                 |0  |
+|3  |link_url     |TEXT    |0      |                 |0  |
+|4  |display_order|INTEGER |0      |0                |0  |
+|5  |is_active    |BOOLEAN |0      |1                |0  |
+|6  |created_at   |DATETIME|0      |CURRENT_TIMESTAMP|0  |

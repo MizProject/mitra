@@ -1,0 +1,4 @@
+/* Set background color using the universal variable */
+#hero-section {
+    background-color: var(--primary-color);
+}

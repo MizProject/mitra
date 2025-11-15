@@ -1,0 +1,128 @@
+<!-- Mitra Client -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to Our Business</title>
+    <link rel="stylesheet" href="/assets/npm/bulma/css/bulma.min.css">
+    <link rel="stylesheet" href="/assets/npm/fontawesome-free/css/all.min.css">
+    <link rel="stylesheet" href="/assets/runtime/client/assets/css/index.css">
+    <link rel="stylesheet" href="/assets/runtime/client/assets/css/hero.css">
+    <link rel="icon" type="image/png" href="">
+</head>
+<body>
+
+    <!-- Navigation Bar -->
+    <nav class="navbar is-light" role="navigation" aria-label="main navigation">
+        <div class="navbar-brand">
+            <a class="navbar-item" href="/" id="navbar-brand-logo">
+                <!-- The logo will be dynamically loaded later -->
+                <strong class="is-size-4">Business Name</strong>
+            </a>
+
+            <a role="button" class="navbar-burger" aria-label="menu" aria-expanded="false" data-target="navbarBasicExample">
+                <span aria-hidden="true"></span>
+                <span aria-hidden="true"></span>
+                <span aria-hidden="true"></span>
+            </a>
+        </div>
+
+        <div id="navbarBasicExample" class="navbar-menu">
+            <div class="navbar-start">
+                <a class="navbar-item" href="/">Home</a>
+                <a class="navbar-item">Services</a>
+                <a class="navbar-item">About</a>
+                <a class="navbar-item">Contact</a>
+            </div>
+
+            <div class="navbar-end">
+                <div class="navbar-item">
+                    <div class="buttons">
+                        <a class="button is-primary">
+                            <strong>Sign up</strong>
+                        </a>
+                        <a class="button is-light" href="/login-customer">
+                            Log in
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero is-medium is-primary is-bold" id="hero-section">
+        <div class="hero-body">
+            <div class="container has-text-centered">
+                <h1 class="title is-1" id="hero-title">
+                    Your One-Stop Service Solution
+                </h1>
+                <h2 class="subtitle is-3">
+                    Quality, convenience, and excellence.
+                </h2>
+                <a class="button is-primary is-inverted is-large">
+                    <span class="icon"><i class="fas fa-calendar-check"></i></span>
+                    <span>Book a Service Now</span>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Promotion Banner Section -->
+    <section class="section has-background-light" id="promotion-section">
+        <div class="container">
+            <div class="promotion-slider">
+                <div class="promotion-slides">
+                    <!-- Placeholder images. These will be loaded from the backend later. -->
+                    <div class="promotion-slide is-active">
+                        <div class="slide-content-wrapper">
+                            <img class="slide-bg-image" src="https://via.placeholder.com/1200x400.png?text=Special+Offer" alt="Special Offer">
+                            <img class="slide-main-image" src="https://via.placeholder.com/1200x400.png?text=Special+Offer" alt="Special Offer">
+                        </div>
+                    </div>
+                    <div class="promotion-slide">
+                        <div class="slide-content-wrapper">
+                            <img class="slide-bg-image" src="https://via.placeholder.com/1200x400.png?text=New+Service+Launch" alt="New Service">
+                            <img class="slide-main-image" src="https://via.placeholder.com/1200x400.png?text=New+Service+Launch" alt="New Service">
+                        </div>
+                    </div>
+                    <div class="promotion-slide">
+                        <div class="slide-content-wrapper">
+                            <img class="slide-bg-image" src="https://via.placeholder.com/1200x400.png?text=Holiday+Discounts" alt="Holiday Discounts">
+                            <img class="slide-main-image" src="https://via.placeholder.com/1200x400.png?text=Holiday+Discounts" alt="Holiday Discounts">
+                        </div>
+                    </div>
+                </div>
+                <button class="slider-nav prev"><i class="fas fa-chevron-left"></i></button>
+                <button class="slider-nav next"><i class="fas fa-chevron-right"></i></button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Services Section -->
+    <section class="section">
+        <div class="container">
+            <h2 class="title has-text-centered">Our Services</h2>
+            <div class="columns is-multiline" id="services-list">
+                <!-- Service items will be dynamically loaded here -->
+                <progress class="progress is-large is-primary" max="100">25%</progress>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="content has-text-centered">
+            <p>
+                <strong id="footer-business-name">Mitra Business</strong> by <a href="https://github.com/MizProject">MizProject</a>. The source code is licensed MIT.
+            </p>
+        </div>
+    </footer>
+
+</body>
+<script src="/assets/runtime/client/assets/js/index.js"></script>
+<script src="/assets/runtime/client/assets/js/favicon.js"></script>
+<script src="/assets/runtime/client/assets/js/theme_config.js"></script>
+</html>

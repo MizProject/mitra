@@ -1,0 +1,1 @@
+// Auth's purpose is to check if the user is logged to current session

@@ -5,11 +5,13 @@
     "bulma": "^1.0.4",
     "dotenv": "^17.2.3",
     "express": "^5.1.0",
+    "express-session": "^1.18.2",
     "fontawesome": "^5.6.3",
     "fontawesome-free": "^1.0.4",
     "html5-qrcode": "^2.3.8",
     "multer": "^2.0.2",
     "nodemon": "^3.1.11",
+    "pica": "^9.0.1",
     "sequelize": "^6.37.7",
     "sqlite3": "^5.1.7",
     "vanilla-picker": "^2.12.3"
@@ -19,6 +21,7 @@
     "dev-setup-debug": "nodemon setup.js --debug",
     "dev-setup": "nodemon setup.js",
     "dev-runtime": "nodemon runtime.js",
+    "dev-runtime-debug": "nodemon runtime.js --debug",
     "one-time-setup": "node setup.js"
   }
 }

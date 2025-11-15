@@ -1,0 +1,102 @@
+<!-- Login page -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login</title>
+    <link rel="stylesheet" href="/assets/npm/bulma/css/bulma.min.css">
+    <link rel="stylesheet" href="/assets/runtime/assets/css/hero.css">
+    <link rel="stylesheet" href="/assets/npm/fontawesome-free/css/all.min.css">
+    <style>
+        /* Use the primary theme color for active tabs and buttons */
+        .tabs.is-boxed li.is-active a {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+            color: white;
+        }
+        .button.is-primary {
+            background-color: var(--primary-color);
+        }
+        .button.is-primary:hover {
+            background-color: var(--secondary-color);
+        }
+    </style>
+</head>
+<body>
+    <section class="section">
+        <div class="container">
+            <div class="columns is-centered">
+                <div class="column is-half">
+                    <div class="tabs is-boxed is-fullwidth">
+                        <ul>
+                            <li class="is-active" data-tab="login-tab"><a>Login</a></li>
+                            <li data-tab="register-tab"><a>Register</a></li>
+                        </ul>
+                    </div>
+                    <div class="box">
+                        <!-- Login Form -->
+                        <div id="login-tab" class="content-tab">
+                            <form id="login-form">
+                                <div class="field">
+                                    <label class="label">Email</label>
+                                    <div class="control has-icons-left">
+                                        <input class="input" type="email" placeholder="e.g. alex@example.com" required id="login-email">
+                                        <span class="icon is-small is-left"><i class="fas fa-envelope"></i></span>
+                                    </div>
+                                </div>
+                                <div class="field">
+                                    <label class="label">Password</label>
+                                    <div class="control has-icons-left">
+                                        <input class="input" type="password" placeholder="********" required id="login-password">
+                                        <span class="icon is-small is-left"><i class="fas fa-lock"></i></span>
+                                    </div>
+                                </div>
+                                <div class="field">
+                                    <button class="button is-primary is-fullwidth">Login</button>
+                                </div>
+                            </form>
+                            <div class="notification is-danger is-hidden" id="login-status"></div>
+                        </div>
+
+                        <!-- Registration Form -->
+                        <div id="register-tab" class="content-tab" style="display: none;">
+                            <form id="register-form">
+                                <div class="columns">
+                                    <div class="column"><div class="field"><label class="label">First Name</label><div class="control"><input class="input" type="text" placeholder="Alex" id="register-firstname"></div></div></div>
+                                    <div class="column"><div class="field"><label class="label">Last Name</label><div class="control"><input class="input" type="text" placeholder="Smith" id="register-lastname"></div></div></div>
+                                </div>
+                                <div class="field">
+                                    <label class="label">Email</label>
+                                    <div class="control has-icons-left">
+                                        <input class="input" type="email" placeholder="e.g. alex@example.com" required id="register-email">
+                                        <span class="icon is-small is-left"><i class="fas fa-envelope"></i></span>
+                                    </div>
+                                </div>
+                                <div class="field">
+                                    <label class="label">Password</label>
+                                    <div class="control has-icons-left">
+                                        <input class="input" type="password" placeholder="********" required id="register-password">
+                                        <span class="icon is-small is-left"><i class="fas fa-lock"></i></span>
+                                    </div>
+                                </div>
+                                <div class="field">
+                                    <button class="button is-primary is-fullwidth">Register</button>
+                                </div>
+                            </form>
+                            <div class="notification is-danger is-hidden" id="register-status"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+</body>
+    <!-- Universal Theme Script -->
+    <script src="/assets/runtime/client/assets/js/theme_config.js"></script>
+    <!-- Page-specific Scripts -->
+    <script src="/assets/runtime/client/assets/js/auth.js"></script>
+    <script src="/assets/runtime/client/assets/js/register.js"></script>
+    <script src="/assets/runtime/client/assets/js/login.js"></script>
+</html>

@@ -478,7 +478,7 @@ app.post('/api/setup-servicing-tables', (req, res) => {
         return res.status(400).json({ error: 'An array of selected services is required.' });
     }
 
-    const coreTables = ['services', 'bookings', 'booking_items', 'service_availability'];
+    const coreTables = ['services', 'bookings', 'customers', 'booking_items', 'service_availability', 'promotion_banners'];
     
     const schemaPath = path.join(__dirname, '.servicing_vischem.sql');
     fs.readFile(schemaPath, 'utf8', (err, sqlScript) => {
