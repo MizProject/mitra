@@ -1,17 +1,89 @@
 <!DOCTYPE html>
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Home Page</title>
-    <link rel="stylesheet" href="/assets/runtime/client/runtime/css/home.css">
+    <title>Home</title>
     <link rel="stylesheet" href="/assets/npm/bulma/css/bulma.min.css">
-    <link rel="stylesheet" href="/assets/npm/font-awesome/css/font-awesome.min.css">
-
+    <link rel="stylesheet" href="/assets/npm/fontawesome-free/css/all.min.css">
+    <link rel="stylesheet" href="/assets/runtime/client/assets/css/index.css">
+    <link rel="stylesheet" href="/assets/runtime/client/assets/css/home.css">
 </head>
 <body>
+    <!-- Navigation Bar -->
+    <nav class="navbar is-light" role="navigation" aria-label="main navigation">
+        <div class="navbar-brand">
+            <a class="navbar-item" href="/" id="navbar-brand-logo">
+                <strong class="is-size-4">Business Name</strong>
+            </a>
+            <a role="button" class="navbar-burger" aria-label="menu" aria-expanded="false" data-target="navbarBasicExample"><span aria-hidden="true"></span><span aria-hidden="true"></span><span aria-hidden="true"></span></a>
+        </div>
+        <div id="navbarBasicExample" class="navbar-menu">
+            <div class="navbar-start">
+                <a class="navbar-item" href="/home">Dashboard</a>
+                <a class="navbar-item">My Bookings</a>
+                <a class="navbar-item">Profile</a>
+            </div>
+            <div class="navbar-end">
+                <div class="navbar-item">
+                    <div class="buttons">
+                        <a class="button is-light" id="logout-button">Log out</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
 
+    <!-- Promotion Banner Section -->
+    <section class="section has-background-light" id="promotion-section">
+        <div class="container">
+            <div class="promotion-slider">
+                <div class="promotion-slides" id="promotion-slides-container">
+                    <!-- Slides will be dynamically loaded here -->
+                </div>
+                <button class="slider-nav prev" style="z-index: 10;"><i class="fas fa-chevron-left"></i></button>
+                <button class="slider-nav next" style="z-index: 10;"><i class="fas fa-chevron-right"></i></button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Action Cards Section -->
+    <section class="section">
+        <div class="container">
+            <div class="columns is-multiline" id="home-action-cards">
+                <!-- Static and Dynamic cards will be loaded here -->
+                <div class="column is-one-third">
+                    <div class="card is-clickable home-action-card">
+                        <div class="card-content has-text-centered">
+                            <span class="icon is-large has-text-primary"><i class="fas fa-concierge-bell fa-2x"></i></span>
+                            <p class="title is-4">Request a Service</p>
+                            <p>Browse all our available services and make a new booking.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="column is-one-third">
+                    <div class="card is-clickable home-action-card">
+                        <div class="card-content has-text-centered">
+                            <span class="icon is-large has-text-primary"><i class="fas fa-tasks fa-2x"></i></span>
+                            <p class="title is-4">Check My Bookings</p>
+                            <p>View the status of your current and past service bookings.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
 </body>
+<!-- Auth check -->
 <script src="/assets/runtime/client/assets/js/auth.js"></script>
+<!-- Universal Theme Script -->
+<script src="/assets/runtime/client/assets/js/theme_config.js"></script>
+<!-- Banner Script -->
+<script src="/assets/runtime/client/assets/js/bannerpromo.js"></script>
+<!-- Dynamic Card Loader -->
+<script src="/assets/runtime/client/assets/js/home-cards.js"></script>
+<!-- UI -->
 <script src="/assets/runtime/client/assets/js/home.js"></script>
-
+<!-- Logout Handler -->
+<script src="/assets/runtime/client/assets/js/logout.js"></script>
 </html>

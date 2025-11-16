@@ -103,69 +103,8 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        /**
-         * Fetches banners from the API and sets up the promotion slider.
-         */
-        async function fetchAndSetupBanners() {
-            const sliderContainer = document.querySelector('.promotion-slides');
-            const promotionSection = document.getElementById('promotion-section');
-            if (!sliderContainer || !promotionSection) return;
-
-            try {
-                const response = await fetch('/api/get-banners');
-                if (!response.ok) throw new Error('Failed to load banners.');
-                const banners = await response.json();
-
-                if (banners.length === 0) {
-                    promotionSection.style.display = 'none'; // Hide section if no banners
-                    return;
-                }
-
-                sliderContainer.innerHTML = ''; // Clear placeholders
-
-                banners.forEach((banner, index) => {
-                    const slide = document.createElement('div');
-                    slide.className = 'promotion-slide';
-                    if (index === 0) slide.classList.add('is-active');
-
-                    // Create two images: one for the blurred background, one for the contained foreground.
-                    const imageHTML = `
-                        <img src="${banner.image_url}" class="slide-bg-image" alt="Promotional Banner Background">
-                        <img src="${banner.image_url}" class="slide-main-image" alt="Promotional Banner">
-                    `;
-                    slide.innerHTML = banner.link_url ? `<a href="${banner.link_url}">${imageHTML}</a>` : imageHTML;
-                    
-                    sliderContainer.appendChild(slide);
-                });
-
-                // Now that slides are in the DOM, set up the controls
-                const slides = document.querySelectorAll('.promotion-slide');
-                let currentSlide = 0;
-
-                const showSlide = (index) => {
-                    const offset = -index * 100;
-                    sliderContainer.style.transform = `translateX(${offset}%)`;
-                };
-
-                document.querySelector('.slider-nav.next').addEventListener('click', () => {
-                    currentSlide = (currentSlide + 1) % slides.length;
-                    showSlide(currentSlide);
-                });
-
-                document.querySelector('.slider-nav.prev').addEventListener('click', () => {
-                    currentSlide = (currentSlide - 1 + slides.length) % slides.length;
-                    showSlide(currentSlide);
-                });
-
-            } catch (error) {
-                console.error('Error fetching banners:', error);
-                promotionSection.style.display = 'none'; // Hide on error
-            }
-        }
-
         // Initialize the page
         fetchSiteConfig();
         fetchServices();
         setupNavbarBurger();
-        fetchAndSetupBanners();
     });

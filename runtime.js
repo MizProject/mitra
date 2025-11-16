@@ -203,6 +203,19 @@ app.get('/api/get-banners', (req, res) => {
     });
 });
 
+app.get('/api/get-service-types', (req, res) => {
+    debugLogWriteToFile("Received request for /api/get-service-types");
+    // This query finds all unique, non-null service types that are currently active.
+    const sql = 'SELECT DISTINCT service_type FROM services WHERE is_active = 1 AND service_type IS NOT NULL';
+
+    db.all(sql, [], (err, rows) => {
+        if (err) {
+            return res.status(500).json({ error: err.message });
+        }
+        res.json(rows.map(row => row.service_type) || []);
+    });
+});
+
 app.post('/api/customer/register', async (req, res) => {
     debugLogWriteToFile("Received request for /api/customer/register");
     const { email, password, firstName, lastName } = req.body;
@@ -260,6 +273,28 @@ app.post('/api/customer/login', (req, res) => {
         } catch (error) {
             res.status(500).json({ error: "Error during authentication." });
         }
+    });
+});
+
+app.get('/api/customer/session-status', (req, res) => {
+    debugLogWriteToFile("Checking customer session status.");
+    if (req.session && req.session.customerId) {
+        res.json({ loggedIn: true, customerId: req.session.customerId });
+    } else {
+        res.json({ loggedIn: false });
+    }
+});
+
+app.post('/api/customer/logout', (req, res) => {
+    debugLogWriteToFile("Customer logout request received.");
+    req.session.destroy(err => {
+        if (err) {
+            debugLogWriteToFile(`Error destroying session: ${err.message}`);
+            return res.status(500).json({ error: 'Could not log out at this time.' });
+        }
+        // Optional: clear the cookie, though destroy() usually handles it.
+        res.clearCookie('connect.sid'); 
+        res.json({ message: 'Logout successful.' });
     });
 });
 

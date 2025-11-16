@@ -74,29 +74,11 @@
     <section class="section has-background-light" id="promotion-section">
         <div class="container">
             <div class="promotion-slider">
-                <div class="promotion-slides">
-                    <!-- Placeholder images. These will be loaded from the backend later. -->
-                    <div class="promotion-slide is-active">
-                        <div class="slide-content-wrapper">
-                            <img class="slide-bg-image" src="https://via.placeholder.com/1200x400.png?text=Special+Offer" alt="Special Offer">
-                            <img class="slide-main-image" src="https://via.placeholder.com/1200x400.png?text=Special+Offer" alt="Special Offer">
-                        </div>
-                    </div>
-                    <div class="promotion-slide">
-                        <div class="slide-content-wrapper">
-                            <img class="slide-bg-image" src="https://via.placeholder.com/1200x400.png?text=New+Service+Launch" alt="New Service">
-                            <img class="slide-main-image" src="https://via.placeholder.com/1200x400.png?text=New+Service+Launch" alt="New Service">
-                        </div>
-                    </div>
-                    <div class="promotion-slide">
-                        <div class="slide-content-wrapper">
-                            <img class="slide-bg-image" src="https://via.placeholder.com/1200x400.png?text=Holiday+Discounts" alt="Holiday Discounts">
-                            <img class="slide-main-image" src="https://via.placeholder.com/1200x400.png?text=Holiday+Discounts" alt="Holiday Discounts">
-                        </div>
-                    </div>
+                <div class="promotion-slides" id="promotion-slides-container">
+                    <!-- Slides will be dynamically loaded here -->
                 </div>
-                <button class="slider-nav prev"><i class="fas fa-chevron-left"></i></button>
-                <button class="slider-nav next"><i class="fas fa-chevron-right"></i></button>
+                <button class="slider-nav prev" style="z-index: 10;"><i class="fas fa-chevron-left"></i></button>
+                <button class="slider-nav next" style="z-index: 10;"><i class="fas fa-chevron-right"></i></button>
             </div>
         </div>
     </section>
@@ -122,7 +104,9 @@
     </footer>
 
 </body>
-<script src="/assets/runtime/client/assets/js/index.js"></script>
 <script src="/assets/runtime/client/assets/js/favicon.js"></script>
 <script src="/assets/runtime/client/assets/js/theme_config.js"></script>
+<script src="/assets/runtime/client/assets/js/redirect-if-already-logged-in.js"></script>
+<script src="/assets/runtime/client/assets/js/index.js"></script>
+<script src="/assets/runtime/client/assets/js/bannerpromo.js"></script>
 </html>

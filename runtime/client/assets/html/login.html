@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login</title>
     <link rel="stylesheet" href="/assets/npm/bulma/css/bulma.min.css">
-    <link rel="stylesheet" href="/assets/runtime/assets/css/hero.css">
+    <link rel="stylesheet" href="/assets/runtime/client/assets/css/hero.css">
     <link rel="stylesheet" href="/assets/npm/fontawesome-free/css/all.min.css">
     <style>
         /* Use the primary theme color for active tabs and buttons */
@@ -87,6 +87,9 @@
                             <div class="notification is-danger is-hidden" id="register-status"></div>
                         </div>
                     </div>
+                    <div class="has-text-centered">
+                        <a href="/">&larr; Go back to the main page</a>
+                    </div>
                 </div>
             </div>
         </div>
@@ -96,7 +99,7 @@
     <!-- Universal Theme Script -->
     <script src="/assets/runtime/client/assets/js/theme_config.js"></script>
     <!-- Page-specific Scripts -->
-    <script src="/assets/runtime/client/assets/js/auth.js"></script>
+    <script src="/assets/runtime/client/assets/js/redirect-if-already-logged-in.js"></script>
     <script src="/assets/runtime/client/assets/js/register.js"></script>
     <script src="/assets/runtime/client/assets/js/login.js"></script>
 </html>
