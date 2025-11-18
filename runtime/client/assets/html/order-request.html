@@ -15,8 +15,13 @@
     <nav class="navbar is-light" role="navigation" aria-label="main navigation">
         <div class="navbar-brand">
             <a class="navbar-item" href="/" id="navbar-brand-logo"><strong class="is-size-4">Business Name</strong></a>
+            <a role="button" class="navbar-burger" aria-label="menu" aria-expanded="false" data-target="navbarClientMenu">
+                <span aria-hidden="true"></span>
+                <span aria-hidden="true"></span>
+                <span aria-hidden="true"></span>
+            </a>
         </div>
-        <div class="navbar-menu">
+        <div id="navbarClientMenu" class="navbar-menu">
             <div class="navbar-end">
                 <div class="navbar-item">
                     <a class="button is-light" id="logout-button">Log out</a>
@@ -35,5 +40,6 @@
 <script src="/assets/runtime/client/assets/js/auth.js"></script>
 <script src="/assets/runtime/client/assets/js/theme_config.js"></script>
 <script src="/assets/runtime/client/assets/js/logout.js"></script>
+<script src="/assets/runtime/client/assets/js/navigation.js"></script>
 <script src="/assets/runtime/client/assets/js/order-request.js"></script>
 </html>

@@ -3,15 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard</title>
+    <title>Manage Bookings - Admin</title>
     <link rel="stylesheet" href="/assets/npm/bulma/css/bulma.min.css">
     <link rel="stylesheet" href="/assets/npm/fontawesome-free/css/all.min.css">
     <link rel="stylesheet" href="/assets/runtime/client/assets/css/index.css">
     <style>
-        /* Apply theme color to the active menu item */
         .menu-list a.is-active {
             background-color: var(--primary-color);
             color: white;
+        }
+        .table-container {
+            overflow-x: auto;
         }
         /* Mobile-first styles for sidebar */
         @media screen and (max-width: 768px) {
@@ -28,9 +30,7 @@
 <body>
     <nav class="navbar is-dark" role="navigation" aria-label="main navigation">
         <div class="navbar-brand">
-            <a class="navbar-item" href="/admin" id="navbar-brand-logo">
-                <strong>Admin Panel</strong>
-            </a>
+            <a class="navbar-item" href="/admin" id="navbar-brand-logo"><strong>Admin Panel</strong></a>
             <a role="button" class="navbar-burger" aria-label="menu" aria-expanded="false" data-target="admin-sidebar">
                 <span aria-hidden="true"></span>
                 <span aria-hidden="true"></span>
@@ -48,39 +48,23 @@
             <aside class="menu p-4">
                 <p class="menu-label">General</p>
                 <ul class="menu-list">
-                    <li><a href="/admin" class="is-active"><span class="icon-text"><span class="icon"><i class="fas fa-tachometer-alt"></i></span><span>Dashboard</span></span></a></li>
+                    <li><a href="/admin"><span class="icon-text"><span class="icon"><i class="fas fa-tachometer-alt"></i></span><span>Dashboard</span></span></a></li>
                 </ul>
                 <p class="menu-label">Management</p>
                 <ul class="menu-list">
-                    <li><a href="/admin/bookings"><span class="icon-text"><span class="icon"><i class="fas fa-tasks"></i></span><span>Bookings</span></span></a></li>
-                    <!-- Future links can be added here -->
+                    <li><a href="/admin/bookings" class="is-active"><span class="icon-text"><span class="icon"><i class="fas fa-tasks"></i></span><span>Bookings</span></span></a></li>
+                    <li><a href="/admin/banners"><span class="icon-text"><span class="icon"><i class="fas fa-images"></i></span><span>Banners</span></span></a></li>
                 </ul>
             </aside>
         </div>
+
         <!-- Main Content -->
         <div class="column is-10">
             <section class="section">
                 <div class="container">
-                    <h1 class="title">Welcome, Admin!</h1>
-                    <p class="subtitle">Use the menu on the left to manage your business, or use the tools below.</p>
-
-                    <div class="columns">
-                        <div class="column is-half">
-                            <div class="card">
-                                <header class="card-header">
-                                    <p class="card-header-title">
-                                        Admin Tools
-                                    </p>
-                                </header>
-                                <div class="card-content">
-                                    <div class="content">
-                                        <button class="button is-primary" id="start-scan-button"><span class="icon"><i class="fas fa-qrcode"></i></span><span>Scan Booking QR Code</span></button>
-                                        <div id="qr-reader" class="mt-4" style="width: 100%;"></div>
-                                        <div id="qr-reader-result" class="mt-4"></div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                    <h1 class="title">All Customer Bookings</h1>
+                    <div class="table-container" id="bookings-table-container">
+                        <progress class="progress is-large is-primary" max="100">Loading...</progress>
                     </div>
                 </div>
             </section>
@@ -91,8 +75,7 @@
 <script src="/assets/runtime/client/assets/js/theme_config.js"></script>
 <script src="/assets/runtime/admin/assets/js/logout.js"></script>
 <script src="/assets/runtime/admin/assets/js/navigation.js"></script>
-<script src="/assets/npm/html5-qrcode/dist/html5-qrcode.min.js"></script>
 <script src="/assets/npm/qrcode-generator/dist/qrcode.js"></script>
 <script src="/assets/runtime/admin/assets/js/booking-modal.js"></script>
-<script src="/assets/runtime/admin/assets/js/dashboard.js"></script>
+<script src="/assets/runtime/admin/assets/js/bookings.js"></script>
 </html>

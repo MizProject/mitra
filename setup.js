@@ -219,6 +219,21 @@ const db = new sqlite3.Database(dbPath, (err) => {
             }
         });
 
+        // Create admin_login table
+        db.run(`CREATE TABLE IF NOT EXISTS admin_login (
+            admin_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT NOT NULL UNIQUE,
+            password TEXT NOT NULL,
+            recovery_code TEXT,
+            privilege TEXT DEFAULT 'admin'
+        )`, (err) => {
+            if (err) {
+                console.error(`Error creating admin_login table: ${err.message}`);
+                debugLogWriteToFile(`Error creating admin_login table: ${err.message}`);
+            } else {
+                debugLogWriteToFile(`admin_login table checked/created.`);
+            }
+        });
 
     }
 });

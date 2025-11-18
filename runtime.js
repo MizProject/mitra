@@ -97,9 +97,25 @@ app.get('/', (req, res) => {
     }
 });
 
-app.get('/admin-page', (req, res) => {
-    res.sendFile(path.join(__dirname, 'runtime/admin/index.html'));
+app.get('/admin', (req, res) => {
+    if (req.session.adminId) {
+        res.sendFile(path.join(__dirname, 'runtime/admin/index.html'));
+    } else {
+        res.redirect('/admin-login');
+    }
+});
+
+app.get('/admin-login', (req, res) => {
+    res.sendFile(path.join(__dirname, 'runtime/admin/assets/html/login.html'));
 })
+
+app.get('/admin/bookings', (req, res) => {
+    if (req.session.adminId) {
+        res.sendFile(path.join(__dirname, 'runtime/admin/assets/html/bookings.html'));
+    } else {
+        res.redirect('/admin-login');
+    }
+});
 
 app.get('/login-customer', (req, res) => {
     res.sendFile(path.join(__dirname, 'runtime/client/assets/html/login.html'));
@@ -136,7 +152,7 @@ app.get('/my-bookings', (req, res) => {
 
 // --- Runtime API Endpoints ---
 
-app.post('/api/login', (req, res) => {
+app.post('/api/admin/login', (req, res) => {
     const { username, password } = req.body;
     if (!username || !password) {
         return res.status(400).json({ error: "Username and password are required." });
@@ -153,6 +169,7 @@ app.post('/api/login', (req, res) => {
         try {
             const match = await bcrypt.compare(password, row.password);
             if (match) {
+                req.session.adminId = row.admin_id; // Set admin-specific session
                 res.json({ message: "Login successful!" });
             } else {
                 res.status(401).json({ error: "Invalid username or password." });
@@ -160,6 +177,115 @@ app.post('/api/login', (req, res) => {
         } catch (error) {
             res.status(500).json({ error: "Error during authentication." });
         }
+    });
+});
+
+app.get('/api/admin/session-status', (req, res) => {
+    debugLogWriteToFile("Checking admin session status.");
+    if (req.session && req.session.adminId) {
+        res.json({ loggedIn: true, adminId: req.session.adminId });
+    } else {
+        res.json({ loggedIn: false });
+    }
+});
+
+app.post('/api/admin/logout', (req, res) => {
+    debugLogWriteToFile("Admin logout request received.");
+    req.session.destroy(err => {
+        if (err) {
+            return res.status(500).json({ error: 'Could not log out.' });
+        }
+        res.json({ message: 'Logout successful.' });
+    });
+});
+
+app.get('/api/admin/bookings', (req, res) => {
+    debugLogWriteToFile("Admin request for all bookings received.");
+    if (!req.session || !req.session.adminId) {
+        return res.status(401).json({ error: "Administrator not authenticated." });
+    }
+
+    const sql = `
+        SELECT
+            b.booking_id,
+            b.booking_date,
+            b.total_price,
+            b.status,
+            c.first_name,
+            c.last_name,
+            c.email
+        FROM bookings b
+        LEFT JOIN customers c ON b.customer_id = c.customer_id
+        ORDER BY b.booking_date DESC
+    `;
+
+    db.all(sql, [], (err, rows) => {
+        if (err) {
+            debugLogWriteToFile(`Database error fetching all bookings: ${err.message}`);
+            return res.status(500).json({ error: "Failed to retrieve bookings." });
+        }
+        res.json(rows || []);
+    });
+});
+
+app.get('/api/admin/bookings/:bookingId', (req, res) => {
+    debugLogWriteToFile("Admin request for a single booking received.");
+    if (!req.session || !req.session.adminId) {
+        return res.status(401).json({ error: "Administrator not authenticated." });
+    }
+
+    const { bookingId } = req.params;
+
+    const sql = `
+        SELECT
+            b.booking_id,
+            b.booking_date,
+            b.total_price,
+            b.status,
+            c.first_name,
+            c.last_name,
+            c.email,
+            c.phone_number,
+            (
+                SELECT json_group_array(
+                    json_object(
+                        'service_name', s.service_name,
+                        'quantity', bi.quantity,
+                        'price', bi.price_at_time_of_booking
+                    )
+                )
+                FROM booking_items bi
+                JOIN services s ON s.service_id = bi.service_id
+                WHERE bi.booking_id = b.booking_id
+            ) AS items
+        FROM bookings b
+        JOIN customers c ON b.customer_id = c.customer_id
+        WHERE b.booking_id = ?
+    `;
+
+    db.get(sql, [bookingId], (err, row) => {
+        if (err) {
+            debugLogWriteToFile(`Database error fetching single booking: ${err.message}`);
+            return res.status(500).json({ error: "Failed to retrieve booking details." });
+        }
+        if (!row) return res.status(404).json({ error: "Booking not found." });
+        res.json(row);
+    });
+});
+
+app.put('/api/admin/bookings/:bookingId/status', (req, res) => {
+    debugLogWriteToFile("Admin request to update booking status received.");
+    if (!req.session || !req.session.adminId) {
+        return res.status(401).json({ error: "Administrator not authenticated." });
+    }
+
+    const { status } = req.body;
+    const { bookingId } = req.params;
+
+    const sql = 'UPDATE bookings SET status = ? WHERE booking_id = ?';
+    db.run(sql, [status, bookingId], function(err) {
+        if (err) return res.status(500).json({ error: "Failed to update booking status." });
+        res.json({ message: "Booking status updated successfully." });
     });
 });
 
@@ -310,6 +436,8 @@ app.get('/api/customer/bookings', (req, res) => {
             b.booking_date,
             b.total_price,
             b.status,
+            c.first_name,
+            c.last_name,
             (
                 SELECT json_group_array(
                     json_object(
@@ -324,6 +452,7 @@ app.get('/api/customer/bookings', (req, res) => {
                 WHERE bi.booking_id = b.booking_id
             ) AS items
         FROM bookings b
+        JOIN customers c ON b.customer_id = c.customer_id
         WHERE b.customer_id = ?
         ORDER BY b.booking_date DESC
     `;

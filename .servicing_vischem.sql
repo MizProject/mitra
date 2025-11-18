@@ -75,6 +75,15 @@ CREATE TABLE customers (
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Table for administrator accounts.
+CREATE TABLE admin_login (
+    admin_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    username TEXT NOT NULL UNIQUE,
+    password TEXT NOT NULL,
+    recovery_code TEXT,
+    privilege TEXT DEFAULT 'admin'
+);
+
 -- Table for promotional banners shown on the home page.
 CREATE TABLE promotion_banners (
     banner_id INTEGER PRIMARY KEY AUTOINCREMENT,

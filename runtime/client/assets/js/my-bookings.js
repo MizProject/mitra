@@ -264,6 +264,13 @@ document.addEventListener('DOMContentLoaded', () => {
         ctx.fillText('Order Form', width / 2, currentY);
         currentY += sectionSpacing;
 
+        // --- 2a. Draw Customer Name ---
+        if (booking.first_name || booking.last_name) {
+            ctx.font = '14px sans-serif';
+            ctx.fillText(`For: ${booking.first_name || ''} ${booking.last_name || ''}`.trim(), width / 2, currentY);
+            currentY += lineSpacing;
+        }
+
         // --- 3. Draw Items ---
         const drawLine = () => {
             currentY += sectionSpacing / 2;
