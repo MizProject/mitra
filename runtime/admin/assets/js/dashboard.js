@@ -1,5 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
     const startScanButton = document.getElementById('start-scan-button');
+    const qrFileInput = document.getElementById('qr-file-input');
     const qrResultContainer = document.getElementById('qr-reader-result');
 
     /**
@@ -27,6 +28,50 @@ document.addEventListener('DOMContentLoaded', () => {
         // The shared script will handle loading site config when needed.
         startScanButton.addEventListener('click', () => {
             openScannerModal();
+        });
+    }
+
+    if (qrFileInput) {
+        qrFileInput.addEventListener('change', e => {
+            const file = e.target.files[0];
+            if (!file) {
+                return;
+            }
+
+            qrResultContainer.innerHTML = `<p class="has-text-info">Scanning file...</p>`;
+
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                const img = new Image();
+                img.onload = () => {
+                    // Create a canvas to draw the image onto
+                    const canvas = document.createElement('canvas');
+                    const context = canvas.getContext('2d');
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    context.drawImage(img, 0, 0, img.width, img.height);
+
+                    // Get the image data from the canvas
+                    const imageData = context.getImageData(0, 0, img.width, img.height);
+                    
+                    // Use jsQR to scan for a code
+                    const code = jsQR(imageData.data, imageData.width, imageData.height, {
+                        inversionAttempts: "dontInvert",
+                    });
+
+                    if (code) {
+                        fetchAndShowBookingDetails(code.data);
+                        qrResultContainer.innerHTML = ''; // Clear "Scanning file..." message
+                        e.target.value = ''; // Reset file input
+                    } else {
+                        const friendlyMessage = "Could not find a QR code in the selected file. Please try a different image with better clarity, contrast, and a straight-on angle.";
+                        qrResultContainer.innerHTML = `<div class="notification is-danger">${friendlyMessage}</div>`;
+                        e.target.value = ''; // Reset file input
+                    }
+                };
+                img.src = event.target.result;
+            };
+            reader.readAsDataURL(file);
         });
     }
 

@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Site Settings - Admin</title>
+    <link rel="stylesheet" href="/assets/npm/bulma/css/bulma.min.css">
+    <link rel="stylesheet" href="/assets/npm/fontawesome-free/css/all.min.css">
+    <link rel="stylesheet" href="/assets/runtime/client/assets/css/index.css">
+    <style>
+        .menu-list a.is-active { background-color: var(--primary-color); color: white; }
+        @media screen and (max-width: 768px) {
+            #admin-sidebar { display: none; position: absolute; width: 100%; z-index: 20; }
+            #admin-sidebar.is-active { display: block; }
+        }
+        .color-picker-card {
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 20;
+            display: none;
+            padding: 10px;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar is-dark" role="navigation" aria-label="main navigation">
+        <div class="navbar-brand">
+            <a class="navbar-item" href="/admin" id="navbar-brand-logo"><strong>Admin Panel</strong></a>
+            <a role="button" class="navbar-burger" aria-label="menu" aria-expanded="false" data-target="admin-sidebar">
+                <span aria-hidden="true"></span><span aria-hidden="true"></span><span aria-hidden="true"></span>
+            </a>
+        </div>
+        <div class="navbar-end">
+            <div class="navbar-item"><div class="buttons"><a class="button is-light" id="logout-button">Log out</a></div></div>
+        </div>
+    </nav>
+
+    <div class="columns" style="margin: 0;">
+        <!-- Sidebar Menu -->
+        <div class="column is-2 has-background-light" id="admin-sidebar" style="min-height: calc(100vh - 52px);">
+            <aside class="menu p-4">
+                <p class="menu-label">General</p>
+                <ul class="menu-list">
+                    <li><a href="/admin"><span class="icon-text"><span class="icon"><i class="fas fa-tachometer-alt"></i></span><span>Dashboard</span></span></a></li>
+                    <li><a href="/admin/search"><span class="icon-text"><span class="icon"><i class="fas fa-search"></i></span><span>Search</span></span></a></li>
+                </ul>
+                <p class="menu-label">Management</p>
+                <ul class="menu-list">
+                    <li><a href="/admin/bookings"><span class="icon-text"><span class="icon"><i class="fas fa-tasks"></i></span><span>Bookings</span></span></a></li>
+                    <li><a href="/admin/banners"><span class="icon-text"><span class="icon"><i class="fas fa-images"></i></span><span>Banners</span></span></a></li>
+                    <li><a href="/admin/services"><span class="icon-text"><span class="icon"><i class="fas fa-concierge-bell"></i></span><span>Services</span></span></a></li>
+                </ul>
+                <p class="menu-label">Administration</p>
+                <ul class="menu-list">
+                    <li><a href="/admin/settings" class="is-active"><span class="icon-text"><span class="icon"><i class="fas fa-cog"></i></span><span>Settings</span></span></a></li>
+                </ul>
+            </aside>
+        </div>
+
+        <!-- Main Content -->
+        <div class="column is-10">
+            <section class="section">
+                <div class="container">
+                    <h1 class="title">Site Settings</h1>
+                    <div class="box">
+                        <div class="field">
+                            <label class="label">Site Name</label>
+                            <div class="control">
+                                <input class="input" type="text" placeholder="My Awesome Business" id="site-name">
+                            </div>
+                        </div>
+                        <div class="field">
+                            <label class="label">Currency Symbol</label>
+                            <div class="control">
+                                <input class="input" type="text" placeholder="$" id="currency-symbol" style="width: 100px;">
+                            </div>
+                        </div>
+                        <hr>
+                        <!-- Color Pickers -->
+                        <div class="columns">
+                            <div class="column">
+                                <div class="field" style="position: relative;">
+                                    <label class="label">Primary Site Color</label>
+                                    <div class="control">
+                                        <button class="button" id="color-picker-button-primary" style="width: 150px;">#ffffff</button>
+                                    </div>
+                                    <div id="color-picker-card-primary" class="card color-picker-card">
+                                        <div id="picker-container-primary"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="column">
+                               <div class="field" style="position: relative;">
+                                    <label class="label">Secondary Site Color</label>
+                                    <div class="control">
+                                        <button class="button" id="color-picker-button-secondary" style="width: 150px;">#000000</button>
+                                    </div>
+                                    <div id="color-picker-card-secondary" class="card color-picker-card">
+                                        <div id="picker-container-secondary"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <hr>
+                        <!-- File Uploads -->
+                        <div class="field">
+                            <label class="label">Site Logo</label>
+                            <div class="control">
+                                <input class="input" type="file" id="site-logo" accept="image/png, image/jpeg, image/webp, image/bmp">
+                            </div>
+                            <p class="help">Leave empty to keep the current logo.</p>
+                        </div>
+                        <div class="field">
+                            <label class="label">Home Page Banner</label>
+                            <div class="control">
+                                <input class="input" type="file" id="site-banner" accept="image/png, image/jpeg, image/webp">
+                            </div>
+                            <p class="help">Leave empty to keep the current banner.</p>
+                        </div>
+                        <hr>
+                        <!-- Actions -->
+                        <div class="buttons">
+                            <button class="button is-primary" id="save-config-button">
+                                <span class="icon"><i class="fas fa-save"></i></span>
+                                <span>Save All Settings</span>
+                            </button>
+                        </div>
+                        <div class="notification is-hidden" id="config-status-box"></div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+</body>
+<script src="/assets/npm/vanilla-picker/dist/vanilla-picker.min.js"></script>
+<script src="/assets/runtime/admin/assets/js/session.js"></script>
+<script src="/assets/runtime/client/assets/js/theme_config.js"></script>
+<script src="/assets/runtime/admin/assets/js/logout.js"></script>
+<script src="/assets/runtime/admin/assets/js/navigation.js"></script>
+<script src="/assets/runtime/admin/assets/js/settings.js"></script>
+</html>

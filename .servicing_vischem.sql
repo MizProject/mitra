@@ -84,6 +84,18 @@ CREATE TABLE admin_login (
     privilege TEXT DEFAULT 'admin'
 );
 
+-- Table for global site configuration settings.
+CREATE TABLE page_config (
+    config_id INTEGER PRIMARY KEY DEFAULT 1,
+    page_name TEXT,
+    primary_color TEXT,
+    secondary_color TEXT,
+    banner_image TEXT,
+    currency_symbol TEXT DEFAULT '$',
+    page_logo TEXT,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Table for promotional banners shown on the home page.
 CREATE TABLE promotion_banners (
     banner_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -103,7 +115,7 @@ CREATE TABLE booking_items (
     quantity INTEGER NOT NULL DEFAULT 1,
     price_at_time_of_booking REAL NOT NULL,
     FOREIGN KEY (booking_id) REFERENCES bookings (booking_id) ON DELETE CASCADE,
-    FOREIGN KEY (service_id) REFERENCES services (service_id) ON DELETE RESTRICT
+    FOREIGN KEY (service_id) REFERENCES services (service_id) ON DELETE SET NULL
 );
 
 -- Manages availability for services that are time-based or have limited stock (e.g., hotel rooms, repair slots).

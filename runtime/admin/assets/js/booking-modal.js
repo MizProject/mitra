@@ -101,13 +101,14 @@ async function showBookingDetailsModal(booking, onCloseCallback) {
 function populateInfoTab(booking) {
     const container = document.getElementById('info-tab');
     const items = JSON.parse(booking.items || '[]');
-    let itemsHtml = items.map(item => `<li>${item.quantity}x ${item.service_name} ($${item.price.toFixed(2)} each)</li>`).join('');
+    const currency = siteConfig.currency_symbol || '$';
+    let itemsHtml = items.map(item => `<li>${item.quantity}x ${item.service_name} (${currency}${item.price.toFixed(2)} each)</li>`).join('');
 
     container.innerHTML = `
         <p><strong>Customer:</strong> ${booking.first_name} ${booking.last_name}</p>
         <p><strong>Contact:</strong> <a href="mailto:${booking.email}">${booking.email}</a> | ${booking.phone_number || 'No phone'}</p>
         <p><strong>Booking Date:</strong> ${new Date(booking.booking_date).toLocaleString()}</p>
-        <p><strong>Total Price:</strong> $${booking.total_price.toFixed(2)}</p>
+        <p><strong>Total Price:</strong> ${currency}${booking.total_price.toFixed(2)}</p>
         <p><strong>Items:</strong></p>
         <ul>${itemsHtml}</ul>
     `;
@@ -221,11 +222,12 @@ async function generateReceiptCanvas(booking, canvasId) {
     drawLine();
     ctx.textAlign = 'left';
     ctx.font = '14px monospace';
+    const currency = siteConfig.currency_symbol || '$';
     if (items.length > 0) {
         items.forEach(item => {
             ctx.fillText(`${item.quantity}x ${item.service_name}`, padding, currentY);
             ctx.textAlign = 'right';
-            ctx.fillText(`$${(item.price * item.quantity).toFixed(2)}`, width - padding, currentY);
+            ctx.fillText(`${currency}${(item.price * item.quantity).toFixed(2)}`, width - padding, currentY);
             ctx.textAlign = 'left';
             currentY += lineSpacing;
         });
@@ -234,7 +236,7 @@ async function generateReceiptCanvas(booking, canvasId) {
 
     ctx.font = 'bold 16px monospace';
     ctx.textAlign = 'right';
-    ctx.fillText(`Total: $${booking.total_price.toFixed(2)}`, width - padding, currentY);
+    ctx.fillText(`Total: ${currency}${booking.total_price.toFixed(2)}`, width - padding, currentY);
     currentY += sectionSpacing * 2;
 
     const qrSize = 128;
@@ -257,5 +259,5 @@ async function generateReceiptCanvas(booking, canvasId) {
     ctx.font = '10px sans-serif';
     ctx.fillStyle = '#888';
     ctx.fillText('Not an official receipt. For reference only.', width / 2, height - padding - 12);
-    ctx.fillText('Powered by Mitra | MizProject', width / 2, height - padding);
+    ctx.fillText('Powered by Mitra Systems | MizProject', width / 2, height - padding);
 }

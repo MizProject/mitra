@@ -193,6 +193,7 @@ const db = new sqlite3.Database(dbPath, (err) => {
             primary_color TEXT,
             secondary_color TEXT,
             banner_image TEXT,
+            currency_symbol TEXT DEFAULT '$',
             page_logo TEXT,
             updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )`, (err) => {
@@ -456,7 +457,7 @@ const upload = multer({ storage: storage });
 
 app.post('/api/save-site-config', upload.fields([{ name: 'logo', maxCount: 1 }, { name: 'banner', maxCount: 1 }]), (req, res) => {
     debugLogWriteToFile("Received request for /api/save-site-config");
-    const { siteName, primaryColor, secondaryColor } = req.body;
+    const { siteName, primaryColor, secondaryColor, currencySymbol } = req.body;
 
     if (!siteName || !primaryColor) {
         return res.status(400).json({ error: "Site name and primary color are required." });
@@ -469,17 +470,18 @@ app.post('/api/save-site-config', upload.fields([{ name: 'logo', maxCount: 1 }, 
     const bannerPath = bannerFile ? `/runtime/data/images/${bannerFile.filename}` : null;
 
     const sql = `
-        INSERT INTO page_config (config_id, page_name, primary_color, secondary_color, page_logo, banner_image)
-        VALUES (1, ?, ?, ?, ?, ?)
+        INSERT INTO page_config (config_id, page_name, primary_color, secondary_color, page_logo, banner_image, currency_symbol)
+        VALUES (1, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(config_id) DO UPDATE SET
             page_name = COALESCE(excluded.page_name, page_name),
             primary_color = COALESCE(excluded.primary_color, primary_color),
             secondary_color = COALESCE(excluded.secondary_color, secondary_color),
             page_logo = COALESCE(excluded.page_logo, page_logo),
-            banner_image = COALESCE(excluded.banner_image, banner_image);
+            banner_image = COALESCE(excluded.banner_image, banner_image),
+            currency_symbol = COALESCE(excluded.currency_symbol, currency_symbol);
     `;
 
-    db.run(sql, [siteName, primaryColor, secondaryColor, logoPath, bannerPath], function(err) {
+    db.run(sql, [siteName, primaryColor, secondaryColor, logoPath, bannerPath, currencySymbol], function(err) {
         if (err) return res.status(500).json({ error: err.message });
         res.json({ message: "Site configuration saved successfully." });
     });

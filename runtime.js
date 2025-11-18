@@ -138,6 +138,22 @@ app.get('/admin/banners', (req, res) => {
     }
 })
 
+app.get('/admin/settings', (req, res) => {
+    if (req.session.adminId) {
+        res.sendFile(path.join(__dirname, 'runtime/admin/assets/html/settings.html'));
+    } else {
+        res.redirect('/admin-login');
+    }
+});
+
+app.get('/admin/search', (req, res) => {
+    if (req.session.adminId) {
+        res.sendFile(path.join(__dirname, 'runtime/admin/assets/html/search.html'));
+    } else {
+        res.redirect('/admin-login');
+    }
+});
+
 app.get('/login-customer', (req, res) => {
     res.sendFile(path.join(__dirname, 'runtime/client/assets/html/login.html'));
 })
@@ -404,6 +420,56 @@ app.delete('/api/admin/services/:id', (req, res) => {
     });
 });
 
+app.get('/api/admin/search-bookings', (req, res) => {
+    debugLogWriteToFile("Admin search for bookings received.");
+    if (!req.session || !req.session.adminId) {
+        return res.status(401).json({ error: "Administrator not authenticated." });
+    }
+
+    const { bookingId, email, status, startDate, endDate } = req.query;
+
+    let sql = `
+        SELECT
+            b.booking_id, b.booking_date, b.total_price, b.status,
+            c.first_name, c.last_name, c.email
+        FROM bookings b
+        LEFT JOIN customers c ON b.customer_id = c.customer_id
+        WHERE 1=1
+    `;
+    const params = [];
+
+    if (bookingId) {
+        sql += ' AND b.booking_id = ?';
+        params.push(bookingId);
+    }
+    if (email) {
+        sql += ' AND c.email LIKE ?';
+        params.push(`%${email}%`);
+    }
+    if (status) {
+        sql += ' AND b.status = ?';
+        params.push(status);
+    }
+    if (startDate) {
+        sql += ' AND b.booking_date >= ?';
+        params.push(startDate);
+    }
+    if (endDate) {
+        // Add 1 day to the end date to make it inclusive
+        const nextDay = new Date(endDate);
+        nextDay.setDate(nextDay.getDate() + 1);
+        sql += ' AND b.booking_date < ?';
+        params.push(nextDay.toISOString().split('T')[0]);
+    }
+
+    sql += ' ORDER BY b.booking_date DESC';
+
+    db.all(sql, params, (err, rows) => {
+        if (err) return res.status(500).json({ error: "Database search failed." });
+        res.json(rows || []);
+    });
+});
+
 app.get('/api/admin/banners', (req, res) => {
     debugLogWriteToFile("Admin request for all banners received.");
     if (!req.session || !req.session.adminId) {
@@ -527,7 +593,7 @@ app.post('/api/validate-recovery-code', (req, res) => {
 
 app.get('/api/get-site-config', (req, res) => {
     debugLogWriteToFile("Received request for /api/get-site-config");
-    const sql = 'SELECT page_name, primary_color, secondary_color, page_logo, banner_image FROM page_config WHERE config_id = 1';
+    const sql = 'SELECT page_name, primary_color, secondary_color, page_logo, banner_image, currency_symbol FROM page_config WHERE config_id = 1';
 
     db.get(sql, [], (err, row) => {
         if (err) {
@@ -600,6 +666,36 @@ app.get('/api/get-service-details', (req, res) => {
             return res.status(500).json({ error: err.message });
         }
         res.json(row || {});
+    });
+});
+
+app.post('/api/admin/site-config', upload.fields([{ name: 'logo', maxCount: 1 }, { name: 'banner', maxCount: 1 }]), (req, res) => {
+    if (!req.session || !req.session.adminId) {
+        return res.status(401).json({ error: "Administrator not authenticated." });
+    }
+
+    const { siteName, primaryColor, secondaryColor, currencySymbol } = req.body;
+    const logoFile = req.files['logo'] ? req.files['logo'][0] : null;
+    const bannerFile = req.files['banner'] ? req.files['banner'][0] : null;
+
+    const logoPath = logoFile ? `/runtime/data/images/${logoFile.filename}` : null;
+    const bannerPath = bannerFile ? `/runtime/data/images/${bannerFile.filename}` : null;
+
+    // Using COALESCE to only update fields that are provided.
+    const sql = `
+        UPDATE page_config SET
+            page_name = COALESCE(?, page_name),
+            primary_color = COALESCE(?, primary_color),
+            secondary_color = COALESCE(?, secondary_color),
+            currency_symbol = COALESCE(?, currency_symbol),
+            page_logo = COALESCE(?, page_logo),
+            banner_image = COALESCE(?, banner_image)
+        WHERE config_id = 1;
+    `;
+
+    db.run(sql, [siteName, primaryColor, secondaryColor, currencySymbol, logoPath, bannerPath], function(err) {
+        if (err) return res.status(500).json({ error: "Failed to update site configuration." });
+        res.json({ message: "Site configuration updated successfully." });
     });
 });
 

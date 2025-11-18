@@ -1,13 +1,24 @@
 document.addEventListener('DOMContentLoaded', () => {
     const container = document.getElementById('bookings-table-container');
+    let siteConfig = {};
+
+    async function loadConfigAndBookings() {
+        await loadSiteConfig();
+        await loadAllBookings();
+    }
+
+    async function loadSiteConfig() {
+        try {
+            const response = await fetch('/api/get-site-config');
+            if (response.ok) siteConfig = await response.json();
+        } catch (error) {
+            console.error('Could not load site configuration.', error);
+        }
+    }
 
     async function loadAllBookings() {
         try {
             const response = await fetch('/api/admin/bookings');
-            if (!response.ok) {
-                const errorResult = await response.json();
-                throw new Error(errorResult.error || 'Failed to load bookings.');
-            }
             const bookings = await response.json();
             renderBookingsTable(bookings);
         } catch (error) {
@@ -16,6 +27,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function renderBookingsTable(bookings) {
+        const currency = siteConfig.currency_symbol || '$';
         if (bookings.length === 0) {
             container.innerHTML = '<p>No bookings have been made yet.</p>';
             return;
@@ -46,7 +58,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <td>${booking.booking_id}</td>
                 <td>${booking.first_name || ''} ${booking.last_name || ''} (${booking.email})</td>
                 <td>${new Date(booking.booking_date).toLocaleString()}</td>
-                <td>$${booking.total_price.toFixed(2)}</td>
+                <td>${currency}${booking.total_price.toFixed(2)}</td>
                 <td><span class="tag ${getStatusColor(booking.status)}">${booking.status}</span></td>
                 <td>
                     <div class="select is-small">
@@ -106,5 +118,5 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    loadAllBookings();
+    loadConfigAndBookings();
 });

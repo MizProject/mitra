@@ -6,6 +6,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const orderStatus = document.getElementById('order-status');
 
     let cart = []; // This will store our cart items: { service_id, name, price, quantity }
+    let currency = '$'; // Default currency
 
     /**
      * Fetches available services and renders them on the page.
@@ -37,7 +38,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <div class="card-content">
                             <p class="title is-4">${service.service_name}</p>
                             <p class="subtitle is-6">${service.description}</p>
-                            <p class="has-text-weight-bold">Price: $${service.base_price.toFixed(2)}</p>
+                            <p class="has-text-weight-bold">Price: ${currency}${service.base_price.toFixed(2)}</p>
                         </div>
                         <footer class="card-footer">
                             <a href="#" class="card-footer-item add-to-cart-button" data-service-id="${service.service_id}" data-name="${service.service_name}" data-price="${service.base_price}">Add to Order</a>
@@ -77,7 +78,7 @@ document.addEventListener('DOMContentLoaded', () => {
             let total = 0;
             cart.forEach(item => {
                 const li = document.createElement('li');
-                li.textContent = `${item.name} (x${item.quantity}) - $${(item.price * item.quantity).toFixed(2)}`;
+                li.textContent = `${item.name} (x${item.quantity}) - ${currency}${(item.price * item.quantity).toFixed(2)}`;
                 cartItemsContainer.appendChild(li);
                 total += item.price * item.quantity;
             });
@@ -131,7 +132,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
     placeOrderButton.addEventListener('click', placeOrder);
 
+    async function initializePage() {
+        try {
+            const response = await fetch('/api/get-site-config');
+            const config = await response.json();
+            if (config.currency_symbol) currency = config.currency_symbol;
+        } catch (e) { /* Use default currency */ }
+        loadServices();
+        renderCart();
+    }
+
     // --- Initial Load ---
-    loadServices();
-    renderCart();
+    initializePage();
 });

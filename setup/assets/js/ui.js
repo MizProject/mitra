@@ -132,6 +132,15 @@ function interactivePaging(page, target) {
                     </div>
                 </div>
 
+                <!-- Currency Symbol -->
+                <div class="field">
+                    <label class="label">Currency Symbol</label>
+                    <div class="control">
+                        <input class="input" type="text" placeholder="$" id="currency-symbol" value="$" style="width: 100px;">
+                    </div>
+                    <p class="help">e.g., $, €, £, ¥</p>
+                </div>
+
                 <!-- Color Pickers -->
                 <div class="columns is-centered">
                     <div class="column is-narrow">
@@ -342,6 +351,7 @@ function interactivePaging(page, target) {
                 const primaryColor = sessionStorage.getItem('primaryColor');
                 const secondaryColor = sessionStorage.getItem('secondaryColor');
                 const logoInput = document.getElementById('site-logo');
+                const currencySymbol = document.getElementById('currency-symbol').value;
                 const bannerInput = document.getElementById('site-banner');
 
                 if (!siteName || !primaryColor) {
@@ -356,6 +366,7 @@ function interactivePaging(page, target) {
                 formData.append('siteName', siteName);
                 formData.append('primaryColor', primaryColor);
                 if (secondaryColor) formData.append('secondaryColor', secondaryColor);
+                if (currencySymbol) formData.append('currencySymbol', currencySymbol);
                 if (logoInput.files[0]) formData.append('logo', logoInput.files[0]);
                 if (bannerInput.files[0]) formData.append('banner', bannerInput.files[0]);
 

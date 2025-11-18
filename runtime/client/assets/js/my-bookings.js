@@ -327,7 +327,7 @@ document.addEventListener('DOMContentLoaded', () => {
         ctx.font = '10px sans-serif';
         ctx.fillStyle = '#888';
         ctx.fillText('Not an official receipt. For reference only.', width / 2, height - padding);
-        ctx.fillText('Powered by Mitra | MizProject', width / 2, height - padding + 12);
+        ctx.fillText('Powered by Mitra Systems | MizProject', width / 2, height - padding + 12);
         
     }
 
