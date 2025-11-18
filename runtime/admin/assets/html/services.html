@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Services - Admin</title>
+    <link rel="stylesheet" href="/assets/npm/bulma/css/bulma.min.css">
+    <link rel="stylesheet" href="/assets/npm/fontawesome-free/css/all.min.css">
+    <!-- <link rel="stylesheet" href="/assets/npm/cropperjs/dist/cropper.min.css"> Cropper.js v2 styles -->
+    <link rel="stylesheet" href="/assets/runtime/client/assets/css/index.css">
+    <style>
+        .menu-list a.is-active { background-color: var(--primary-color); color: white; }
+        @media screen and (max-width: 768px) {
+            #admin-sidebar { display: none; position: absolute; width: 100%; z-index: 20; }
+            #admin-sidebar.is-active { display: block; }
+        }
+        .service-preview { max-height: 50px; width: auto; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <nav class="navbar is-dark" role="navigation" aria-label="main navigation">
+        <div class="navbar-brand">
+            <a class="navbar-item" href="/admin" id="navbar-brand-logo"><strong>Admin Panel</strong></a>
+            <a role="button" class="navbar-burger" aria-label="menu" aria-expanded="false" data-target="admin-sidebar">
+                <span aria-hidden="true"></span><span aria-hidden="true"></span><span aria-hidden="true"></span>
+            </a>
+        </div>
+        <div class="navbar-end">
+            <div class="navbar-item"><div class="buttons"><a class="button is-light" id="logout-button">Log out</a></div></div>
+        </div>
+    </nav>
+
+    <div class="columns" style="margin: 0;">
+        <!-- Sidebar Menu -->
+        <div class="column is-2 has-background-light" id="admin-sidebar" style="min-height: calc(100vh - 52px);">
+            <aside class="menu p-4">
+                <p class="menu-label">General</p>
+                <ul class="menu-list">
+                    <li><a href="/admin"><span class="icon-text"><span class="icon"><i class="fas fa-tachometer-alt"></i></span><span>Dashboard</span></span></a></li>
+                </ul>
+                <p class="menu-label">Management</p>
+                <ul class="menu-list">
+                    <li><a href="/admin/bookings"><span class="icon-text"><span class="icon"><i class="fas fa-tasks"></i></span><span>Bookings</span></span></a></li>
+                    <li><a href="/admin/banners"><span class="icon-text"><span class="icon"><i class="fas fa-images"></i></span><span>Banners</span></span></a></li>
+                    <li><a href="/admin/services" class="is-active"><span class="icon-text"><span class="icon"><i class="fas fa-concierge-bell"></i></span><span>Services</span></span></a></li>
+                </ul>
+            </aside>
+        </div>
+
+        <!-- Main Content -->
+        <div class="column is-10">
+            <section class="section">
+                <div class="container">
+                    <div class="is-flex is-justify-content-space-between is-align-items-center mb-5">
+                        <h1 class="title">Manage Services</h1>
+                        <button class="button is-primary" id="add-service-button">
+                            <span class="icon"><i class="fas fa-plus"></i></span>
+                            <span>Add New Service</span>
+                        </button>
+                    </div>
+                    <div class="box">
+                        <div id="services-list-container">
+                            <progress class="progress is-small is-primary" max="100">Loading...</progress>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- Cropper Modal -->
+        <div class="modal" id="cropper-modal" style="z-index: 50;">
+            <div class="modal-background"></div>
+            <div class="modal-card">
+                <header class="modal-card-head">
+                    <p class="modal-card-title">Crop Image</p>
+                    <button class="delete" aria-label="close"></button>
+                </header>
+                <section class="modal-card-body">
+                    <div>
+                        <!-- Cropper.js v2 components -->
+                        <cropper-canvas background style="height: 400px;">
+                            <cropper-image id="cropper-image-element" alt="Image to crop" rotatable scalable translatable></cropper-image>
+                            <cropper-shade hidden></cropper-shade>
+                            <cropper-handle action="select" plain></cropper-handle>
+                            <cropper-selection id="cropper-selection-element" aspect-ratio="1" movable resizable>
+                                <cropper-grid role="grid" covered></cropper-grid>
+                                <cropper-crosshair centered></cropper-crosshair>
+                                <cropper-handle action="move" theme-color="rgba(255, 255, 255, 0.35)"></cropper-handle>
+                                <cropper-handle action="n-resize"></cropper-handle>
+                                <cropper-handle action="e-resize"></cropper-handle>
+                                <cropper-handle action="s-resize"></cropper-handle>
+                                <cropper-handle action="w-resize"></cropper-handle>
+                                <cropper-handle action="ne-resize"></cropper-handle>
+                                <cropper-handle action="nw-resize"></cro-handle>
+                                <cropper-handle action="se-resize"></cropper-handle>
+                                <cropper-handle action="sw-resize"></cropper-handle>
+                            </cropper-selection>
+                        </cropper-canvas>
+                    </div>
+                </section>
+                <footer class="modal-card-foot">
+                    <button class="button is-success" id="apply-crop-button">Apply Crop</button>
+                    <button class="button" id="cancel-crop-button">Cancel</button>
+                </footer>
+            </div>
+        </div>
+    </div>
+</body>
+<script src="/assets/runtime/admin/assets/js/session.js"></script>
+<script src="/assets/runtime/client/assets/js/theme_config.js"></script>
+<script src="/assets/runtime/admin/assets/js/logout.js"></script>
+<script src="/assets/runtime/admin/assets/js/navigation.js"></script>
+<script src="/assets/npm/cropperjs/dist/cropper.min.js"></script> <!-- Cropper.js v2 script -->
+<script src="/assets/runtime/admin/assets/js/services.js"></script>
+</html>

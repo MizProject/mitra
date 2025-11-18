@@ -53,6 +53,8 @@
                 <p class="menu-label">Management</p>
                 <ul class="menu-list">
                     <li><a href="/admin/bookings"><span class="icon-text"><span class="icon"><i class="fas fa-tasks"></i></span><span>Bookings</span></span></a></li>
+                    <li><a href="/admin/banners"><span class="icon-text"><span class="icon"><i class="fas fa-images"></i></span><span>Banners</span></span></a></li>
+                    <li><a href="/admin/services"><span class="icon-text"><span class="icon"><i class="fas fa-concierge-bell"></i></span><span>Services</span></span></a></li>
                     <!-- Future links can be added here -->
                 </ul>
             </aside>
@@ -63,6 +65,34 @@
                 <div class="container">
                     <h1 class="title">Welcome, Admin!</h1>
                     <p class="subtitle">Use the menu on the left to manage your business, or use the tools below.</p>
+
+                    <!-- Dashboard Counters -->
+                    <div class="level box">
+                        <div class="level-item has-text-centered">
+                            <div>
+                                <p class="heading">Pending (Total)</p>
+                                <p class="title" id="pending-total-count">0</p>
+                            </div>
+                        </div>
+                        <div class="level-item has-text-centered">
+                            <div>
+                                <p class="heading">Processing</p>
+                                <p class="title" id="processing-total-count">0</p>
+                            </div>
+                        </div>
+                        <div class="level-item has-text-centered">
+                            <div>
+                                <p class="heading">Completed Today</p>
+                                <p class="title" id="completed-today-count">0</p>
+                            </div>
+                        </div>
+                        <div class="level-item has-text-centered">
+                            <div>
+                                <p class="heading">Canceled Today</p>
+                                <p class="title" id="canceled-today-count">0</p>
+                            </div>
+                        </div>
+                    </div>
 
                     <div class="columns">
                         <div class="column is-half">
@@ -91,7 +121,7 @@
 <script src="/assets/runtime/client/assets/js/theme_config.js"></script>
 <script src="/assets/runtime/admin/assets/js/logout.js"></script>
 <script src="/assets/runtime/admin/assets/js/navigation.js"></script>
-<script src="/assets/npm/html5-qrcode/dist/html5-qrcode.min.js"></script>
+<script src="/assets/npm/html5-qrcode/html5-qrcode.min.js"></script>
 <script src="/assets/npm/qrcode-generator/dist/qrcode.js"></script>
 <script src="/assets/runtime/admin/assets/js/booking-modal.js"></script>
 <script src="/assets/runtime/admin/assets/js/dashboard.js"></script>

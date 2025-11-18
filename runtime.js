@@ -8,10 +8,10 @@ const path = require('path');
 const mkdirp = require('mkdirp');
 const crypto = require('crypto');
 const express = require('express');
-const bodyParser = require('body-parser');
 const sqlite3 = require('sqlite3').verbose();
 const bcrypt = require('bcrypt');
 const session = require('express-session');
+const multer = require('multer');
 
 const app = express();
 const port = 3000; // Standard port for the main application
@@ -49,7 +49,7 @@ console.error = (message) => {
 debugLogWriteToFile("Core dependencies loaded.");
 
 // --- Middleware ---
-app.use(bodyParser.json());
+app.use(express.json()); // Modern replacement for body-parser
 debugLogWriteToFile("Body-parser JSON middleware enabled.");
 
 // Session middleware
@@ -72,7 +72,20 @@ app.use('/assets/runtime', express.static(path.join(__dirname, 'runtime/')));
 
 // Serve user-uploaded content (logos, banners)
 const uploadDir = path.join(__dirname, 'runtime/data/images');
+mkdirp.sync(uploadDir); // Ensure upload directory exists
 app.use('/runtime/data/images', express.static(uploadDir));
+
+// Multer storage configuration for file uploads
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        cb(null, uploadDir);
+    },
+    filename: function (req, file, cb) {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        cb(null, `${file.fieldname}-${uniqueSuffix}${path.extname(file.originalname)}`);
+    }
+});
+const upload = multer({ storage: storage });
 
 debugLogWriteToFile("Static asset routes configured.");
 
@@ -117,6 +130,14 @@ app.get('/admin/bookings', (req, res) => {
     }
 });
 
+app.get('/admin/banners', (req, res) => {
+    if (req.session.adminId) {
+        res.sendFile(path.join(__dirname, 'runtime/admin/assets/html/banners.html'));
+    } else {
+        res.redirect('/admin-login');
+    }
+})
+
 app.get('/login-customer', (req, res) => {
     res.sendFile(path.join(__dirname, 'runtime/client/assets/html/login.html'));
 })
@@ -145,6 +166,7 @@ app.get('/settings', (req, res) => {
 app.get('/my-bookings', (req, res) => {
     res.sendFile(path.join(__dirname, 'runtime/client/assets/html/my-bookings.html'));
 });
+
 
 // app.get('/order-confirmation', (req, res) => {
 //     res.sendFile(path.join(__dirname'));
@@ -273,6 +295,193 @@ app.get('/api/admin/bookings/:bookingId', (req, res) => {
     });
 });
 
+app.get('/admin/services', (req, res) => {
+    if (req.session.adminId) {
+        res.sendFile(path.join(__dirname, 'runtime/admin/assets/html/services.html'));
+    } else {
+        res.redirect('/admin-login');
+    }
+});
+
+app.get('/api/admin/dashboard-stats', (req, res) => {
+    debugLogWriteToFile("Admin request for dashboard stats received.");
+    if (!req.session || !req.session.adminId) {
+        return res.status(401).json({ error: "Administrator not authenticated." });
+    }
+
+    // This single query uses conditional aggregation to get all stats at once.
+    // It uses 'localtime' to count stats relative to the server's current day.
+    const sql = `
+        SELECT
+            COUNT(CASE WHEN status = 'Pending' THEN 1 END) as pendingTotal,
+            COUNT(CASE WHEN status = 'Processing' THEN 1 END) as processingTotal,
+            COUNT(CASE WHEN status = 'Completed' AND date(booking_date) = date('now', 'localtime') THEN 1 END) as completedToday,
+            COUNT(CASE WHEN status = 'Canceled' AND date(booking_date) = date('now', 'localtime') THEN 1 END) as canceledToday
+        FROM bookings;
+    `;
+
+    db.get(sql, [], (err, row) => {
+        if (err) {
+            debugLogWriteToFile(`Database error fetching dashboard stats: ${err.message}`);
+            return res.status(500).json({ error: "Failed to retrieve dashboard statistics." });
+        }
+        res.json(row || { pendingTotal: 0, processingTotal: 0, completedToday: 0, canceledToday: 0 });
+    });
+});
+
+app.get('/api/admin/services', (req, res) => {
+    debugLogWriteToFile("Admin request for all services received.");
+    if (!req.session || !req.session.adminId) {
+        return res.status(401).json({ error: "Administrator not authenticated." });
+    }
+    const sql = 'SELECT * FROM services ORDER BY service_name ASC';
+    db.all(sql, [], (err, rows) => {
+        if (err) return res.status(500).json({ error: "Failed to retrieve services." });
+        res.json(rows || []);
+    });
+});
+
+app.post('/api/admin/services', upload.single('image'), (req, res) => {
+    if (!req.session || !req.session.adminId) return res.status(401).json({ error: "Administrator not authenticated." });
+
+    const { service_name, service_type, description, base_price, is_active } = req.body;
+    if (!service_name || !req.file) {
+        return res.status(400).json({ error: "Service Name and an Image are required." });
+    }
+
+    const image_url = `/runtime/data/images/${req.file.filename}`;
+    const sql = 'INSERT INTO services (service_name, service_type, description, base_price, is_active, image_url) VALUES (?, ?, ?, ?, ?, ?)';
+    db.run(sql, [service_name, service_type, description, base_price, is_active === 'true' ? 1 : 0, image_url], function(err) {
+        if (err) return res.status(500).json({ error: "Database error creating service." });
+        res.status(201).json({ message: "Service created successfully.", serviceId: this.lastID });
+    });
+});
+
+app.put('/api/admin/services/:id', upload.single('image'), (req, res) => {
+    if (!req.session || !req.session.adminId) return res.status(401).json({ error: "Administrator not authenticated." });
+
+    const { id } = req.params;
+    const { service_name, service_type, description, base_price, is_active } = req.body;
+
+    let sql = 'UPDATE services SET service_name = ?, service_type = ?, description = ?, base_price = ?, is_active = ?';
+    const params = [service_name, service_type, description, base_price, is_active === 'true' ? 1 : 0];
+
+    if (req.file) {
+        sql += ', image_url = ?';
+        params.push(`/runtime/data/images/${req.file.filename}`);
+    }
+
+    sql += ' WHERE service_id = ?';
+    params.push(id);
+
+    db.run(sql, params, function(err) {
+        if (err) return res.status(500).json({ error: "Database error updating service." });
+        res.json({ message: "Service updated successfully." });
+    });
+});
+
+app.delete('/api/admin/services/:id', (req, res) => {
+    if (!req.session || !req.session.adminId) return res.status(401).json({ error: "Administrator not authenticated." });
+
+    const { id } = req.params;
+    // First, get the image path to delete the file
+    db.get('SELECT image_url FROM services WHERE service_id = ?', [id], (err, row) => {
+        if (err) return res.status(500).json({ error: "Error finding service." });
+        if (row && row.image_url) {
+            // Construct the full file path
+            const filePath = path.join(__dirname, row.image_url);
+            fs.unlink(filePath, (unlinkErr) => {
+                if (unlinkErr) console.error(`Failed to delete service image file: ${filePath}`, unlinkErr);
+            });
+        }
+
+        // Then, delete the database record
+        db.run('DELETE FROM services WHERE service_id = ?', [id], function(err) {
+            if (err) return res.status(500).json({ error: "Database error deleting service." });
+            if (this.changes === 0) return res.status(404).json({ error: "Service not found." });
+            res.json({ message: "Service deleted successfully." });
+        });
+    });
+});
+
+app.get('/api/admin/banners', (req, res) => {
+    debugLogWriteToFile("Admin request for all banners received.");
+    if (!req.session || !req.session.adminId) {
+        return res.status(401).json({ error: "Administrator not authenticated." });
+    }
+
+    // This query gets all fields for all banners, ordered for the admin view.
+    const sql = 'SELECT banner_id, banner_name, image_url, link_url, display_order, is_active FROM promotion_banners ORDER BY display_order ASC, banner_name ASC';
+
+    db.all(sql, [], (err, rows) => {
+        if (err) return res.status(500).json({ error: "Failed to retrieve banners." });
+        res.json(rows || []);
+    });
+});
+
+app.post('/api/admin/banners', upload.single('image'), (req, res) => {
+    if (!req.session || !req.session.adminId) return res.status(401).json({ error: "Administrator not authenticated." });
+
+    const { banner_name, link_url, display_order, is_active } = req.body;
+    if (!banner_name || !req.file) {
+        return res.status(400).json({ error: "Banner Name and an Image are required." });
+    }
+
+    const image_url = `/runtime/data/images/${req.file.filename}`;
+    const sql = 'INSERT INTO promotion_banners (banner_name, image_url, link_url, display_order, is_active) VALUES (?, ?, ?, ?, ?)';
+    db.run(sql, [banner_name, image_url, link_url, display_order, is_active === 'true' ? 1 : 0], function(err) {
+        if (err) return res.status(500).json({ error: "Database error creating banner." });
+        res.status(201).json({ message: "Banner created successfully.", bannerId: this.lastID });
+    });
+});
+
+app.put('/api/admin/banners/:id', upload.single('image'), (req, res) => {
+    if (!req.session || !req.session.adminId) return res.status(401).json({ error: "Administrator not authenticated." });
+
+    const { id } = req.params;
+    const { banner_name, link_url, display_order, is_active } = req.body;
+
+    let sql = 'UPDATE promotion_banners SET banner_name = ?, link_url = ?, display_order = ?, is_active = ?';
+    const params = [banner_name, link_url, display_order, is_active === 'true' ? 1 : 0];
+
+    if (req.file) {
+        sql += ', image_url = ?';
+        params.push(`/runtime/data/images/${req.file.filename}`);
+    }
+
+    sql += ' WHERE banner_id = ?';
+    params.push(id);
+
+    db.run(sql, params, function(err) {
+        if (err) return res.status(500).json({ error: "Database error updating banner." });
+        res.json({ message: "Banner updated successfully." });
+    });
+});
+
+app.delete('/api/admin/banners/:id', (req, res) => {
+    if (!req.session || !req.session.adminId) return res.status(401).json({ error: "Administrator not authenticated." });
+
+    const { id } = req.params;
+    // First, get the image path to delete the file
+    db.get('SELECT image_url FROM promotion_banners WHERE banner_id = ?', [id], (err, row) => {
+        if (err) return res.status(500).json({ error: "Error finding banner." });
+        if (row && row.image_url) {
+            // Construct the full file path and delete the image file
+            const filePath = path.join(__dirname, row.image_url.replace('/runtime', 'runtime'));
+            fs.unlink(filePath, (unlinkErr) => {
+                if (unlinkErr) console.error(`Failed to delete banner image file: ${filePath}`, unlinkErr);
+            });
+        }
+
+        // Then, delete the database record
+        db.run('DELETE FROM promotion_banners WHERE banner_id = ?', [id], function(err) {
+            if (err) return res.status(500).json({ error: "Database error deleting banner." });
+            if (this.changes === 0) return res.status(404).json({ error: "Banner not found." });
+            res.json({ message: "Banner deleted successfully." });
+        });
+    });
+});
+
 app.put('/api/admin/bookings/:bookingId/status', (req, res) => {
     debugLogWriteToFile("Admin request to update booking status received.");
     if (!req.session || !req.session.adminId) {
@@ -326,6 +535,7 @@ app.get('/api/get-site-config', (req, res) => {
         }
         res.json(row || {});
     });
+
 });
 
 app.get('/api/get-services', (req, res) => {

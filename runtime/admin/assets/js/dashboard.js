@@ -2,6 +2,27 @@ document.addEventListener('DOMContentLoaded', () => {
     const startScanButton = document.getElementById('start-scan-button');
     const qrResultContainer = document.getElementById('qr-reader-result');
 
+    /**
+     * Fetches and displays the main dashboard statistics.
+     */
+    async function loadDashboardStats() {
+        try {
+            const response = await fetch('/api/admin/dashboard-stats');
+            if (!response.ok) throw new Error('Failed to load dashboard stats.');
+            const stats = await response.json();
+
+            // Update the counter elements with the fetched data
+            document.getElementById('pending-total-count').textContent = stats.pendingTotal;
+            document.getElementById('processing-total-count').textContent = stats.processingTotal;
+            document.getElementById('completed-today-count').textContent = stats.completedToday;
+            document.getElementById('canceled-today-count').textContent = stats.canceledToday;
+
+        } catch (error) {
+            console.error('Error loading dashboard stats:', error);
+            // You could display an error in one of the stat boxes if needed
+        }
+    }
+
     if (startScanButton) {
         // The shared script will handle loading site config when needed.
         startScanButton.addEventListener('click', () => {
@@ -79,4 +100,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }).catch(err => console.error("Camera permissions error:", err));
     }
+
+    // --- Initial Load ---
+    loadDashboardStats();
 });
