@@ -54,16 +54,25 @@ async function renderServiceActionCards(container) {
             if (cardDef) {
                 const column = document.createElement('div');
                 column.className = 'column is-one-third';
+
+                const card = document.createElement('div');
+                card.className = 'card is-clickable home-action-card';
+                card.dataset.serviceType = type; // Store the type for the click event
+
                 column.innerHTML = `
-                    <div class="card is-clickable home-action-card">
-                        <div class="card-content has-text-centered">
-                            <span class="icon is-large has-text-primary"><i class="fas ${cardDef.icon} fa-2x"></i></span>
-                            <p class="title is-4">${cardDef.title}</p>
-                            <p>${cardDef.description}</p>
-                        </div>
+                    <div class="card-content has-text-centered">
+                        <span class="icon is-large has-text-primary"><i class="fas ${cardDef.icon} fa-2x"></i></span>
+                        <p class="title is-4">${cardDef.title}</p>
+                        <p>${cardDef.description}</p>
                     </div>
                 `;
-                container.appendChild(column);
+                card.innerHTML = column.innerHTML; // Set the content
+                card.addEventListener('click', () => {
+                    checkPhoneNumberAndProceed(() => {
+                        window.location.href = `/order-request?service_type=${type}`;
+                    });
+                });
+                container.appendChild(card);
             }
         });
 

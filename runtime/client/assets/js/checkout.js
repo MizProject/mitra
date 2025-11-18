@@ -1,4 +1,5 @@
-document.addEventListener('DOMContentLoaded', () => {
+
+document.addEventListener('DOMContentLoaded', () => { // This is now checkout.js
     const servicesContainer = document.getElementById('services-list-container');
     const cartItemsContainer = document.getElementById('cart-items');
     const cartTotalElement = document.getElementById('cart-total');

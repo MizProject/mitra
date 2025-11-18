@@ -1,0 +1,39 @@
+<!-- Order requests -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Order Request</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/assets/npm/bulma/css/bulma.min.css">
+    <link rel="stylesheet" href="/assets/npm/fontawesome-free/css/all.min.css">
+    <link rel="stylesheet" href="/assets/runtime/client/assets/css/index.css">
+    <link rel="stylesheet" href="/assets/runtime/client/assets/css/home.css">
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar is-light" role="navigation" aria-label="main navigation">
+        <div class="navbar-brand">
+            <a class="navbar-item" href="/" id="navbar-brand-logo"><strong class="is-size-4">Business Name</strong></a>
+        </div>
+        <div class="navbar-menu">
+            <div class="navbar-end">
+                <div class="navbar-item">
+                    <a class="button is-light" id="logout-button">Log out</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+    <section class="section">
+        <div class="container">
+            <div id="dynamic-form-container">
+                <progress class="progress is-large is-primary" max="100">Loading...</progress>
+            </div>
+        </div>
+    </section>
+</body>
+<script src="/assets/runtime/client/assets/js/auth.js"></script>
+<script src="/assets/runtime/client/assets/js/theme_config.js"></script>
+<script src="/assets/runtime/client/assets/js/logout.js"></script>
+<script src="/assets/runtime/client/assets/js/order-request.js"></script>
+</html>

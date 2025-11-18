@@ -107,8 +107,29 @@ app.get('/login-customer', (req, res) => {
 
 app.get('/home', (req, res) => {
     res.sendFile(path.join(__dirname, 'runtime/client/assets/html/home.html'));
-
 })
+
+
+app.get('/order-request', (req, res) => {
+    res.sendFile(path.join(__dirname, 'runtime/client/assets/html/order-request.html'));
+})
+
+app.get('/order-request', (req, res) => {
+    res.sendFile(path.join(__dirname, 'runtime/client/assets/html/order-request.html'));
+})
+
+app.get('/checkout', (req, res) => {
+    res.sendFile(path.join(__dirname, 'runtime/client/assets/html/checkout.html'));
+})
+
+app.get('/settings', (req, res) => {
+    res.sendFile(path.join(__dirname, 'runtime/client/assets/html/settings.html'));
+});
+
+// app.get('/order-confirmation', (req, res) => {
+//     res.sendFile(path.join(__dirname'));
+// })
+
 // --- Runtime API Endpoints ---
 
 app.post('/api/login', (req, res) => {
@@ -179,9 +200,17 @@ app.get('/api/get-site-config', (req, res) => {
 
 app.get('/api/get-services', (req, res) => {
     debugLogWriteToFile("Received request for /api/get-services");
-    const sql = 'SELECT service_id, service_name, description, base_price, image_url FROM services WHERE is_active = 1';
+    const serviceType = req.query.type;
 
-    db.all(sql, [], (err, rows) => {
+    let sql = 'SELECT service_id, service_name, description, base_price, image_url FROM services WHERE is_active = 1';
+    const params = [];
+
+    if (serviceType) {
+        sql += ' AND service_type = ?';
+        params.push(serviceType);
+    }
+
+    db.all(sql, params, (err, rows) => {
         if (err) {
             return res.status(500).json({ error: err.message });
         }
@@ -216,6 +245,24 @@ app.get('/api/get-service-types', (req, res) => {
     });
 });
 
+app.get('/api/get-service-details', (req, res) => {
+    const serviceType = req.query.type;
+
+    if (!serviceType) {
+        return res.status(400).json({ error: "Service type is required." });
+    }
+
+    // Adjust the query based on your actual table structure
+    const sql = `SELECT * FROM service_details_${serviceType} LIMIT 1`;
+
+    db.get(sql, [], (err, row) => {
+        if (err) {
+            return res.status(500).json({ error: err.message });
+        }
+        res.json(row || {});
+    });
+});
+
 app.post('/api/customer/register', async (req, res) => {
     debugLogWriteToFile("Received request for /api/customer/register");
     const { email, password, firstName, lastName } = req.body;
@@ -242,6 +289,66 @@ app.post('/api/customer/register', async (req, res) => {
     } catch (error) {
         res.status(500).json({ error: "Failed to create customer account." });
     }
+});
+
+app.post('/api/customer/update-details', (req, res) => {
+    debugLogWriteToFile("Request to update customer details received.");
+    if (!req.session || !req.session.customerId) {
+        return res.status(401).json({ error: "User not authenticated." });
+    }
+
+    const customerId = req.session.customerId;
+    const { firstName, lastName, phoneNumber } = req.body;
+
+    if (!firstName || !lastName) {
+        return res.status(400).json({ error: "First name and last name are required." });
+    }
+
+    const sql = 'UPDATE customers SET first_name = ?, last_name = ?, phone_number = ? WHERE customer_id = ?';
+    db.run(sql, [firstName, lastName, phoneNumber, customerId], function(err) {
+        if (err) {
+            debugLogWriteToFile(`Database error updating details: ${err.message}`);
+            return res.status(500).json({ error: "Failed to update details." });
+        }
+        res.json({ message: "Your details have been updated successfully." });
+    });
+});
+
+app.post('/api/customer/update-password', (req, res) => {
+    debugLogWriteToFile("Request to update customer password received.");
+    if (!req.session || !req.session.customerId) {
+        return res.status(401).json({ error: "User not authenticated." });
+    }
+
+    const customerId = req.session.customerId;
+    const { currentPassword, newPassword } = req.body;
+
+    if (!currentPassword || !newPassword) {
+        return res.status(400).json({ error: "Current and new passwords are required." });
+    }
+
+    const sql = 'SELECT password_hash FROM customers WHERE customer_id = ?';
+    db.get(sql, [customerId], async (err, row) => {
+        if (err || !row) {
+            return res.status(500).json({ error: "Could not retrieve user data." });
+        }
+
+        const match = await bcrypt.compare(currentPassword, row.password_hash);
+        if (!match) {
+            return res.status(401).json({ error: "Your current password is not correct." });
+        }
+
+        try {
+            const newPasswordHash = await bcrypt.hash(newPassword, 10);
+            const updateSql = 'UPDATE customers SET password_hash = ? WHERE customer_id = ?';
+            db.run(updateSql, [newPasswordHash, customerId], function(err) {
+                if (err) return res.status(500).json({ error: "Failed to update password." });
+                res.json({ message: "Password updated successfully." });
+            });
+        } catch (error) {
+            res.status(500).json({ error: "An error occurred while updating your password." });
+        }
+    });
 });
 
 app.post('/api/customer/login', (req, res) => {
@@ -283,6 +390,96 @@ app.get('/api/customer/session-status', (req, res) => {
     } else {
         res.json({ loggedIn: false });
     }
+});
+
+app.get('/api/customer/details', (req, res) => {
+    debugLogWriteToFile("Request for current customer details received.");
+    if (!req.session || !req.session.customerId) {
+        return res.status(401).json({ error: "User not authenticated." });
+    }
+
+    const customerId = req.session.customerId;
+    const sql = 'SELECT customer_id, email, first_name, last_name, phone_number FROM customers WHERE customer_id = ?';
+
+    db.get(sql, [customerId], (err, row) => {
+        if (err) {
+            debugLogWriteToFile(`Database error fetching customer details: ${err.message}`);
+            return res.status(500).json({ error: "Failed to retrieve customer details." });
+        }
+        if (!row) {
+            return res.status(404).json({ error: "Customer not found." });
+        }
+        res.json(row);
+    });
+});
+
+app.post('/api/customer/create-booking', (req, res) => {
+    debugLogWriteToFile("Received request to create a new booking.");
+
+    // 1. Authentication Check: Ensure a customer is logged in.
+    if (!req.session || !req.session.customerId) {
+        return res.status(401).json({ error: "You must be logged in to place an order." });
+    }
+
+    const { items } = req.body; // Expecting an array of { service_id, quantity }
+    const customerId = req.session.customerId;
+
+    if (!items || !Array.isArray(items) || items.length === 0) {
+        return res.status(400).json({ error: "Booking request must contain at least one item." });
+    }
+
+    // 2. Database Transaction: Use a transaction to ensure all-or-nothing insertion.
+    db.serialize(() => {
+        db.run("BEGIN TRANSACTION");
+
+        // 3. Fetch Prices & Calculate Total: Get prices from DB to prevent client-side tampering.
+        const serviceIds = items.map(item => item.service_id);
+        const placeholders = serviceIds.map(() => '?').join(',');
+        const priceCheckSql = `SELECT service_id, base_price FROM services WHERE service_id IN (${placeholders})`;
+
+        db.all(priceCheckSql, serviceIds, (err, services) => {
+            if (err) {
+                db.run("ROLLBACK");
+                return res.status(500).json({ error: "Failed to verify service prices." });
+            }
+
+            let totalPrice = 0;
+            const priceMap = new Map(services.map(s => [parseInt(s.service_id, 10), s.base_price]));
+
+            for (const item of items) {
+                if (!priceMap.has(item.service_id)) {
+                    db.run("ROLLBACK");
+                    return res.status(400).json({ error: `Invalid service_id provided: ${item.service_id}` });
+                }
+                totalPrice += priceMap.get(item.service_id) * item.quantity;
+            }
+
+            // 4. Create Booking Record
+            const bookingSql = 'INSERT INTO bookings (customer_id, total_price, status) VALUES (?, ?, ?)';
+            db.run(bookingSql, [customerId, totalPrice, 'Pending'], function(err) {
+                if (err) {
+                    db.run("ROLLBACK");
+                    return res.status(500).json({ error: "Failed to create booking record." });
+                }
+                const bookingId = this.lastID;
+
+                // 5. Create Booking Items Records
+                const itemSql = 'INSERT INTO booking_items (booking_id, service_id, quantity, price_at_time_of_booking) VALUES (?, ?, ?, ?)';
+                const itemStmt = db.prepare(itemSql);
+                for (const item of items) {
+                    itemStmt.run(bookingId, item.service_id, item.quantity, priceMap.get(item.service_id));
+                }
+                itemStmt.finalize((err) => {
+                    if (err) {
+                        db.run("ROLLBACK");
+                        return res.status(500).json({ error: "Failed to save booking items." });
+                    }
+                    db.run("COMMIT");
+                    res.status(201).json({ message: "Booking created successfully.", bookingId: bookingId });
+                });
+            });
+        });
+    });
 });
 
 app.post('/api/customer/logout', (req, res) => {

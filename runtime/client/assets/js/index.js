@@ -1,47 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
 
         /**
-         * Fetches site configuration and updates the UI.
-         */
-        async function fetchSiteConfig() {
-            try {
-                const response = await fetch('/api/get-site-config');
-                if (!response.ok) throw new Error('Failed to load site configuration.');
-                const config = await response.json();
-
-                if (config.page_name) {
-                    document.title = config.page_name;
-                    document.querySelector('#navbar-brand-logo .is-size-4').textContent = config.page_name;
-                    document.getElementById('footer-business-name').textContent = config.page_name;
-                }
-
-                if (config.page_logo) {
-                    const logoImg = document.createElement('img');
-                    logoImg.src = config.page_logo;
-                    logoImg.alt = config.page_name || 'Logo';
-                    logoImg.style.maxHeight = '28px'; // Bulma navbar item height
-                    const brandLink = document.getElementById('navbar-brand-logo');
-                    brandLink.innerHTML = ''; // Clear text
-                    brandLink.appendChild(logoImg);
-
-                    // Set the page's favicon
-                    setfavicon(config.page_logo);
-                }
-
-                if (config.banner_image) {
-                    document.getElementById('hero-section').style.backgroundImage = `url('${config.banner_image}')`;
-                }
-
-                if (config.primary_color) {
-                    document.getElementById('hero-section').style.backgroundColor = config.primary_color;
-                }
-
-            } catch (error) {
-                console.error('Error fetching site config:', error);
-            }
-        }
-
-        /**
          * Fetches available services and populates the service list.
          */
         async function fetchServices() {
@@ -54,7 +13,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 servicesList.innerHTML = ''; // Clear the loading progress bar
 
                 if (services.length === 0) {
-                    servicesList.innerHTML = '<div class="column has-text-centered"><p>No services are currently available. Please check back later.</p></div>';
+                    servicesList.innerHTML = '<div class="column has-text-centered"><p>Offer not found in database, please check again later.</p></div>';
                     return;
                 }
 
@@ -104,7 +63,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // Initialize the page
-        fetchSiteConfig();
         fetchServices();
         setupNavbarBurger();
     });

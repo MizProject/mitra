@@ -1,0 +1,66 @@
+<!-- Checkout page -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Order Request</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/assets/npm/bulma/css/bulma.min.css">
+    <link rel="stylesheet" href="/assets/npm/fontawesome-free/css/all.min.css">
+    <link rel="stylesheet" href="/assets/runtime/client/assets/css/index.css">
+</head>
+<body>
+
+    <!-- Navigation Bar -->
+    <nav class="navbar is-light" role="navigation" aria-label="main navigation">
+        <div class="navbar-brand">
+            <a class="navbar-item" href="/" id="navbar-brand-logo"><strong class="is-size-4">Business Name</strong></a>
+        </div>
+        <div class="navbar-menu">
+            <div class="navbar-start">
+                <a class="navbar-item" href="/home">Dashboard</a>
+                <a class="navbar-item">My Bookings</a>
+            </div>
+            <div class="navbar-end">
+                <div class="navbar-item">
+                    <div class="buttons"><a class="button is-light" id="logout-button">Log out</a></div>
+                </div>
+            </div>
+        </div>
+    </nav>
+    <section class="section">
+        <div class="container">
+            <div class="columns">
+                <!-- Services List -->
+                <div class="column is-two-thirds">
+                    <h1 class="title">Checkout</h1>
+                    <p class="subtitle">Select from our available services to create your order.</p>
+                    <div class="columns is-multiline" id="services-list-container">
+                        <progress class="progress is-large is-primary" max="100">Loading...</progress>
+                    </div>
+                </div>
+
+                <!-- Shopping Cart / Order Summary -->
+                <div class="column is-one-third">
+                    <div class="box" style="position: sticky; top: 20px;">
+                        <h2 class="title is-4">Your Order</h2>
+                        <ul id="cart-items">
+                            <li>Your cart is empty.</li>
+                        </ul>
+                        <hr>
+                        <p class="is-size-5 has-text-weight-bold">Total: $<span id="cart-total">0.00</span></p>
+                        <hr>
+                        <button class="button is-primary is-fullwidth" id="place-order-button" disabled>Place Order</button>
+                        <div class="notification is-hidden mt-4" id="order-status"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</body>
+
+<script src="/assets/runtime/client/assets/js/auth.js"></script>
+<script src="/assets/runtime/client/assets/js/theme_config.js"></script>
+<script src="/assets/runtime/client/assets/js/checkout.js"></script>
+<script src="/assets/runtime/client/assets/js/logout.js"></script>
+</html>

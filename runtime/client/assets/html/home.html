@@ -21,8 +21,8 @@
         <div id="navbarBasicExample" class="navbar-menu">
             <div class="navbar-start">
                 <a class="navbar-item" href="/home">Dashboard</a>
-                <a class="navbar-item">My Bookings</a>
-                <a class="navbar-item">Profile</a>
+                <a class="navbar-item" href="/my-bookings">My Bookings</a>
+                <a class="navbar-item" href="/settings">Settings</a>
             </div>
             <div class="navbar-end">
                 <div class="navbar-item">
@@ -53,7 +53,7 @@
             <div class="columns is-multiline" id="home-action-cards">
                 <!-- Static and Dynamic cards will be loaded here -->
                 <div class="column is-one-third">
-                    <div class="card is-clickable home-action-card">
+                    <div class="card is-clickable home-action-card" id="request-service-card"> 
                         <div class="card-content has-text-centered">
                             <span class="icon is-large has-text-primary"><i class="fas fa-concierge-bell fa-2x"></i></span>
                             <p class="title is-4">Request a Service</p>
