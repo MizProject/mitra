@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Bookings</title>
+    <link rel="stylesheet" href="/assets/npm/bulma/css/bulma.min.css">
+    <link rel="stylesheet" href="/assets/npm/fontawesome-free/css/all.min.css">
+    <link rel="stylesheet" href="/assets/runtime/client/assets/css/index.css">
+    <style>
+        .tabs li.is-active a {
+            border-bottom-color: var(--primary-color);
+            color: var(--primary-color);
+        }
+        .modal-card-foot.is-justify-content-center {
+            justify-content: center;
+        }
+        .booking-card { margin-bottom: 1.5rem; }
+        .content-tab { display: none; }
+        .content-tab.is-active { display: block; }
+    </style>
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar is-light" role="navigation" aria-label="main navigation">
+        <div class="navbar-brand">
+            <a class="navbar-item" href="/" id="navbar-brand-logo"><strong class="is-size-4">Business Name</strong></a>
+        </div>
+        <div class="navbar-menu">
+            <div class="navbar-start">
+                <a class="navbar-item" href="/home">Dashboard</a>
+                <a class="navbar-item is-active" href="/my-bookings">My Bookings</a>
+                <a class="navbar-item" href="/settings">Settings</a>
+            </div>
+            <div class="navbar-end">
+                <div class="navbar-item">
+                    <div class="buttons"><a class="button is-light" id="logout-button">Log out</a></div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <section class="section">
+        <div class="container">
+            <h1 class="title">My Bookings</h1>
+            <div class="tabs is-boxed">
+                <ul>
+                    <li class="is-active" data-tab="pending-tab"><a>Pending</a></li>
+                    <li data-tab="processing-tab"><a>Processing</a></li>
+                    <li data-tab="completed-tab"><a>Completed</a></li>
+                    <li data-tab="canceled-tab"><a>Canceled</a></li>
+                </ul>
+            </div>
+
+            <!-- Tab Content -->
+            <div id="pending-tab" class="content-tab is-active"></div>
+            <div id="processing-tab" class="content-tab"></div>
+            <div id="completed-tab" class="content-tab"></div>
+            <div id="canceled-tab" class="content-tab"></div>
+        </div>
+    </section>
+
+</body>
+<!-- Local QR Code Generation Library -->
+<script src="/assets/npm/qrcode-generator/dist/qrcode.js"></script>
+<script src="/assets/runtime/client/assets/js/auth.js"></script>
+<script src="/assets/runtime/client/assets/js/theme_config.js"></script>
+<script src="/assets/runtime/client/assets/js/logout.js"></script>
+<script src="/assets/runtime/client/assets/js/my-bookings.js"></script>
+</html>

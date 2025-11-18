@@ -12,6 +12,19 @@ document.addEventListener('DOMContentLoaded', () => { // This is now checkout.js
      * Fetches available services and renders them on the page.
      */
     async function loadServices() {
+        // Check if a cart was passed from the order-request page
+        const prefilledCart = sessionStorage.getItem('checkoutCart');
+        if (prefilledCart) {
+            cart = JSON.parse(prefilledCart);
+            // Clear the item from session storage so it's not used again on a page refresh
+            sessionStorage.removeItem('checkoutCart');
+            document.getElementById('services-list-container').style.display = 'none'; // Hide service selection
+            document.querySelector('.column.is-two-thirds .title').textContent = 'Confirm Your Order';
+            document.querySelector('.column.is-two-thirds .subtitle').textContent = 'Review the items from your request below.';
+            renderCart();
+            return;
+        }
+
         const urlParams = new URLSearchParams(window.location.search);
         const serviceType = urlParams.get('service_type');
 
@@ -108,9 +121,12 @@ document.addEventListener('DOMContentLoaded', () => { // This is now checkout.js
             if (!response.ok) throw new Error(result.error || 'An unknown error occurred.');
 
             orderStatus.className = 'notification is-success';
-            orderStatus.textContent = `Success! Your order #${result.bookingId} has been placed.`;
+            orderStatus.textContent = `Success! Your order #${result.bookingId} has been placed. Redirecting to your bookings...`;
             cart = []; // Clear the cart
             renderCart();
+
+            // Redirect to the bookings page after a short delay
+            setTimeout(() => { window.location.href = '/my-bookings'; }, 2000);
         } catch (error) {
             orderStatus.className = 'notification is-danger';
             orderStatus.textContent = `Error: ${error.message}`;

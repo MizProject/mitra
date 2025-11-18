@@ -47,8 +47,10 @@ CREATE TABLE service_details_food (
 -- Details specific to laundry services.
 CREATE TABLE service_details_laundry (
     service_id INTEGER PRIMARY KEY,
-    load_type TEXT, -- e.g., 'Standard Wash', 'Delicates', 'Dry Cleaning'
-    weight_limit_kg REAL,
+    -- Example: 'Standard', 'Express'. This is a property of the service.
+    turnaround_type TEXT DEFAULT 'Standard',
+    -- Estimated time in hours for this service type.
+    estimated_turnaround_hours INTEGER,
     FOREIGN KEY (service_id) REFERENCES services (service_id) ON DELETE CASCADE
 );
 

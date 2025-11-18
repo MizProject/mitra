@@ -1,0 +1,7 @@
+.tabs li.is-active a {
+            border-bottom-color: var(--primary-color);
+            color: var(--primary-color);
+        }
+        .booking-card { margin-bottom: 1.5rem; }
+        .content-tab { display: none; }
+        .content-tab.is-active { display: block; }

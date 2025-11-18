@@ -126,6 +126,10 @@ app.get('/settings', (req, res) => {
     res.sendFile(path.join(__dirname, 'runtime/client/assets/html/settings.html'));
 });
 
+app.get('/my-bookings', (req, res) => {
+    res.sendFile(path.join(__dirname, 'runtime/client/assets/html/my-bookings.html'));
+});
+
 // app.get('/order-confirmation', (req, res) => {
 //     res.sendFile(path.join(__dirname'));
 // })
@@ -289,6 +293,71 @@ app.post('/api/customer/register', async (req, res) => {
     } catch (error) {
         res.status(500).json({ error: "Failed to create customer account." });
     }
+});
+
+app.get('/api/customer/bookings', (req, res) => {
+    debugLogWriteToFile("Request for customer bookings received.");
+    if (!req.session || !req.session.customerId) {
+        return res.status(401).json({ error: "User not authenticated." });
+    }
+
+    const customerId = req.session.customerId;
+    // This query fetches each booking and aggregates its items into a JSON array,
+    // which is very efficient for the frontend to process.
+    const sql = `
+        SELECT
+            b.booking_id,
+            b.booking_date,
+            b.total_price,
+            b.status,
+            (
+                SELECT json_group_array(
+                    json_object(
+                        'service_type', s.service_type,
+                        'service_name', s.service_name,
+                        'quantity', bi.quantity,
+                        'price', bi.price_at_time_of_booking
+                    )
+                )
+                FROM booking_items bi
+                JOIN services s ON s.service_id = bi.service_id
+                WHERE bi.booking_id = b.booking_id
+            ) AS items
+        FROM bookings b
+        WHERE b.customer_id = ?
+        ORDER BY b.booking_date DESC
+    `;
+
+    db.all(sql, [customerId], (err, rows) => {
+        if (err) return res.status(500).json({ error: "Failed to retrieve your bookings." });
+        res.json(rows || []);
+    });
+});
+
+app.post('/api/customer/bookings/:bookingId/cancel', (req, res) => {
+    debugLogWriteToFile("Request to cancel a booking received.");
+    if (!req.session || !req.session.customerId) {
+        return res.status(401).json({ error: "User not authenticated." });
+    }
+
+    const customerId = req.session.customerId;
+    const bookingId = req.params.bookingId;
+
+    // This query ensures a user can only cancel their own bookings, and only if the status is 'Pending'.
+    const sql = 'UPDATE bookings SET status = ? WHERE booking_id = ? AND customer_id = ? AND status = ?';
+
+    db.run(sql, ['Canceled', bookingId, customerId, 'Pending'], function(err) {
+        if (err) {
+            debugLogWriteToFile(`Database error canceling booking: ${err.message}`);
+            return res.status(500).json({ error: "Failed to cancel the booking." });
+        }
+        if (this.changes === 0) {
+            // This means no row was updated, either because the booking doesn't exist,
+            // doesn't belong to the user, or is no longer in 'Pending' status.
+            return res.status(403).json({ error: "This booking cannot be canceled." });
+        }
+        res.json({ message: "Booking has been successfully canceled." });
+    });
 });
 
 app.post('/api/customer/update-details', (req, res) => {

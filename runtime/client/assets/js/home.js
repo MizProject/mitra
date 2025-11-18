@@ -23,6 +23,7 @@ async function checkPhoneNumberAndProceed(onValid) {
 document.addEventListener('DOMContentLoaded', () => {
     const actionCardsContainer = document.getElementById('home-action-cards');
     const requestServiceCard = document.getElementById('request-service-card');
+    const checkBookingsCard = document.getElementById('check-bookings-card');
 
     if (actionCardsContainer) {
         // This function is defined in home-cards.js
@@ -34,6 +35,12 @@ document.addEventListener('DOMContentLoaded', () => {
             checkPhoneNumberAndProceed(() => {
                 window.location.href = '/order-request';
             });
+        });
+    }
+
+    if (checkBookingsCard) {
+        checkBookingsCard.addEventListener('click', () => {
+            window.location.href = '/my-bookings';
         });
     }
 });
