@@ -19,12 +19,13 @@ document.addEventListener('DOMContentLoaded', () => {
         resultsContainer.innerHTML = '<progress class="progress is-small is-primary" max="100">Loading...</progress>';
 
         const bookingId = document.getElementById('search-booking-id').value;
+        const name = document.getElementById('search-name').value;
         const email = document.getElementById('search-email').value;
         const status = document.getElementById('search-status').value;
         const startDate = document.getElementById('search-start-date').value;
         const endDate = document.getElementById('search-end-date').value;
 
-        const query = new URLSearchParams({ bookingId, email, status, startDate, endDate }).toString();
+        const query = new URLSearchParams({ bookingId, name, email, status, startDate, endDate }).toString();
 
         try {
             const response = await fetch(`/api/admin/search-bookings?${query}`);

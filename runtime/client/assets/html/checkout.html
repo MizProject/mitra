@@ -53,9 +53,39 @@
                             <li>Your cart is empty.</li>
                         </ul>
                         <hr>
-                        <p class="is-size-5 has-text-weight-bold">Total: $<span id="cart-total">0.00</span></p>
+                        <p class="is-size-5 has-text-weight-bold">Total: <span id="cart-total-currency">$</span><span id="cart-total">0.00</span></p>
                         <hr>
-                        <button class="button is-primary is-fullwidth" id="place-order-button" disabled>Place Order</button>
+
+                        <!-- Pickup/Delivery Options -->
+                        <div id="pickup-options-container" class="mb-4" style="display: none;">
+                            <label class="label">How will we receive your items?</label>
+                            <div class="control">
+                                <label class="radio">
+                                    <input type="radio" name="pickup_method" value="service_pickup" checked>
+                                    Service will pick up
+                                </label>
+                                <label class="radio">
+                                    <input type="radio" name="pickup_method" value="customer_dropoff">
+                                    I will drop them off
+                                </label>
+                            </div>
+                        </div>
+
+                        <div id="return-options-container" class="mb-4" style="display: none;">
+                            <label class="label">How would you like to get your order back?</label>
+                            <div class="control">
+                                <label class="radio">
+                                    <input type="radio" name="return_method" value="service_delivery" checked>
+                                    Deliver to my address
+                                </label>
+                                <label class="radio">
+                                    <input type="radio" name="return_method" value="customer_pickup">
+                                    I will pick it up
+                                </label>
+                            </div>
+                        </div>
+
+                        <button class="button is-primary is-fullwidth" id="place-order-button">Place Order</button>
                         <div class="notification is-hidden mt-4" id="order-status"></div>
                     </div>
                 </div>

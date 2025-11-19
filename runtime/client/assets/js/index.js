@@ -1,10 +1,18 @@
 document.addEventListener('DOMContentLoaded', () => {
+    let currency = '$';
 
         /**
          * Fetches available services and populates the service list.
          */
         async function fetchServices() {
             const servicesList = document.getElementById('services-list');
+            // Fetch currency first
+            try {
+                const response = await fetch('/api/get-site-config');
+                const config = await response.json();
+                if (config.currency_symbol) currency = config.currency_symbol;
+            } catch (e) { /* Use default currency */ }
+
             try {
                 const response = await fetch('/api/get-services');
                 if (!response.ok) throw new Error('Failed to load services.');
@@ -34,7 +42,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             <div class="card-content">
                                 <p class="title is-4">${service.service_name || 'Unnamed Service'}</p>
                                 <p class="subtitle is-6">${service.description || 'No description available.'}</p>
-                                <p class="is-size-5 has-text-weight-bold has-text-primary" style="color: var(--primary-color) !important;">$${Number(service.base_price).toFixed(2)}</p>
+                                <p class="is-size-5 has-text-weight-bold has-text-primary" style="color: var(--primary-color) !important;">${currency}${Number(service.base_price).toFixed(2)}</p>
                             </div>
                             <footer class="card-footer"><a href="#" class="card-footer-item has-text-weight-bold" style="color: var(--primary-color);">Book Now</a></footer>
                         </div>

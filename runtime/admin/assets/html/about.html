@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About Mitra</title>
+    <link rel="stylesheet" href="/assets/npm/bulma/css/bulma.min.css">
+    <link rel="stylesheet" href="/assets/npm/fontawesome-free/css/all.min.css"> <!-- FontAwesome for icons -->
+    <link rel="stylesheet" href="/assets/runtime/client/assets/css/index.css"> <!-- Shared theme styles -->
+    <link rel="stylesheet" href="/assets/runtime/admin/assets/css/admin.css"> <!-- Admin-specific styles -->
+</head>
+<body>
+    <!-- Admin Navigation Bar (Dark) -->
+    <nav class="navbar is-dark" role="navigation" aria-label="main navigation">
+        <div class="navbar-brand">
+            <a class="navbar-item" href="/admin" id="navbar-brand-logo">
+                <strong>Admin Panel</strong>
+            </a>
+            <a role="button" class="navbar-burger" aria-label="menu" aria-expanded="false" data-target="admin-sidebar">
+                <span aria-hidden="true"></span><span aria-hidden="true"></span><span aria-hidden="true"></span>
+            </a>
+        </div>
+        <div class="navbar-end">
+            <div class="navbar-item"><div class="buttons"><a class="button is-light" id="logout-button">Log out</a></div></div>
+        </div>
+    </nav>
+
+    <div class="columns" style="margin: 0;">
+        <!-- Sidebar Menu -->
+        <div class="column is-2 has-background-light" id="admin-sidebar" style="min-height: calc(100vh - 52px);">
+            <aside class="menu p-4">
+                <p class="menu-label">General</p>
+                <ul class="menu-list">
+                    <li><a href="/admin"><span class="icon-text"><span class="icon"><i class="fas fa-tachometer-alt"></i></span><span>Dashboard</span></span></a></li>
+                    <li><a href="/admin/search"><span class="icon-text"><span class="icon"><i class="fas fa-search"></i></span><span>Search</span></span></a></li>
+                </ul>
+                <p class="menu-label">Management</p>
+                <ul class="menu-list">
+                    <li><a href="/admin/bookings"><span class="icon-text"><span class="icon"><i class="fas fa-tasks"></i></span><span>Bookings</span></span></a></li>
+                    <li><a href="/admin/banners"><span class="icon-text"><span class="icon"><i class="fas fa-images"></i></span><span>Banners</span></span></a></li>
+                    <li><a href="/admin/services"><span class="icon-text"><span class="icon"><i class="fas fa-concierge-bell"></i></span><span>Services</span></span></a></li>
+                </ul>
+                <p class="menu-label">Administration</p>
+                <ul class="menu-list">
+                    <li><a href="/admin/settings"><span class="icon-text"><span class="icon"><i class="fas fa-cog"></i></span><span>Settings</span></span></a></li>
+                </ul>
+            </aside>
+        </div>
+
+        <!-- Main Content -->
+        <div class="column is-10">
+            <section class="section">
+                <div class="container">
+                    <div class="notification is-success is-light">
+                        <span class="icon"><i class="fas fa-star"></i></span>
+                        <strong>Well done!</strong> You've found the hidden "About" page.
+                    </div>
+                    <div class="box">
+                        <div class="has-text-centered mb-5">
+                            <img src="/assets/runtime/data/images/s/mitra-img.png" id="branding_placeholder">
+                        </div>
+                        <div class="has-text-centered mb-5">
+                            <h1 class="title is-2" id="page-title">Mitra Software</h1>
+                            <p class="subtitle">A free, open-source tool for small businesses.</p>
+                        </div>
+                        <div class="content">
+                            <p>Mitra is developed and maintained by a small, dedicated organization with the goal of providing powerful tools for businesses operating on a minimal budget.</p>
+                            <p>The software is provided "AS IS" and free of charge under a permissive license, allowing you to use, examine, and rebrand it to fit your needs. The only restriction is on redistribution; the official and sole source for the software is its GitHub repository.</p>
+                            <div class="notification is-info is-light">
+                                <strong>Official Repository:</strong>
+                                <a href="https://github.com/MizProject" target="_blank" rel="noopener noreferrer">https://github.com/MizProject</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+    
+    <!-- Session check and logout functionality -->
+    <script src="/assets/runtime/admin/assets/js/session.js"></script>
+    <script src="/assets/runtime/admin/assets/js/logout.js"></script>
+    <!-- Universal Theme Script -->
+    <script src="/assets/runtime/client/assets/js/theme_config.js"></script>
+    <!-- Navbar burger menu functionality -->
+    <script src="/assets/runtime/admin/assets/js/navigation.js"></script>
+</body>
+</html>

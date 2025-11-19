@@ -134,6 +134,8 @@ debugLogWriteToFile("Hosting Custom Assets as static assets...");
 app.use('/assets/setup', express.static(path.join(__dirname, 'setup/assets')));
 debugLogWriteToFile("Custom Assets are being hosted as static assets at /assets/setup");
 
+app.use('/assets/admin', express.static(path.join(__dirname, 'runtime/admin/assets')));
+
 // Runtime Directory
 // For submitting changes
 // Note: uploading images should be at /runtime/data/images/

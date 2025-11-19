@@ -82,7 +82,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 cartItemsContainer.appendChild(li);
                 total += item.price * item.quantity;
             });
-            cartTotalElement.textContent = total.toFixed(2);
+            cartTotalElement.textContent = `${currency}${total.toFixed(2)}`;
             placeOrderButton.disabled = false;
         }
     }

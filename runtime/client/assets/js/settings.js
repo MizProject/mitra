@@ -16,6 +16,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const savePasswordButton = document.getElementById('save-password-button');
     const passwordStatus = document.getElementById('password-status');
 
+    // Form elements for address
+    const addressFormContainer = document.getElementById('address-form-container');
+    const addressForm = document.getElementById('address-form');
+    const addressLine1Input = document.getElementById('address-line1');
+    const addressLine2Input = document.getElementById('address-line2');
+    const cityInput = document.getElementById('city');
+    const stateProvinceInput = document.getElementById('state-province');
+    const postalCodeInput = document.getElementById('postal-code');
+    const countryInput = document.getElementById('country');
+    const saveAddressButton = document.getElementById('save-address-button');
+    const addressStatus = document.getElementById('address-status');
     /**
      * Fetches the current customer's details and populates the form.
      */
@@ -29,6 +40,14 @@ document.addEventListener('DOMContentLoaded', () => {
             firstNameInput.value = customer.first_name || '';
             lastNameInput.value = customer.last_name || '';
             phoneInput.value = customer.phone_number || '';
+
+            // Populate address fields
+            addressLine1Input.value = customer.address_line1 || '';
+            addressLine2Input.value = customer.address_line2 || '';
+            cityInput.value = customer.city || '';
+            stateProvinceInput.value = customer.state_province || '';
+            postalCodeInput.value = customer.postal_code || '';
+            countryInput.value = customer.country || '';
         } catch (error) {
             showStatus(detailsStatus, error.message, 'is-danger');
         }
@@ -99,6 +118,57 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     /**
+     * Handles the submission of the address form.
+     */
+    addressForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        saveAddressButton.classList.add('is-loading');
+
+        const data = {
+            address_line1: addressLine1Input.value,
+            address_line2: addressLine2Input.value,
+            city: cityInput.value,
+            state_province: stateProvinceInput.value,
+            postal_code: postalCodeInput.value,
+            country: countryInput.value,
+        };
+
+        try {
+            const response = await fetch('/api/customer/update-address', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data),
+            });
+            const result = await response.json();
+            if (!response.ok) throw new Error(result.error);
+            showStatus(addressStatus, result.message, 'is-success');
+        } catch (error) {
+            showStatus(addressStatus, error.message, 'is-danger');
+        } finally {
+            saveAddressButton.classList.remove('is-loading');
+        }
+    });
+
+    /**
+     * Checks service types and shows address form if 'hotel' is not one of them.
+     */
+    async function checkServiceTypesAndToggleAddressForm() {
+        try {
+            const response = await fetch('/api/get-service-types');
+            if (!response.ok) return; // Fail silently, keep form hidden
+            const serviceTypes = await response.json();
+
+            // If 'hotel' is NOT one of the service types, show the address form.
+            if (!serviceTypes.includes('hotel')) {
+                addressFormContainer.style.display = 'block';
+            }
+        } catch (error) {
+            console.error("Could not check service types:", error);
+        }
+    }
+
+
+    /**
      * Helper function to display status messages in notification boxes.
      * @param {HTMLElement} element - The notification element.
      * @param {string} message - The message to display.
@@ -113,5 +183,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Initial load
+    checkServiceTypesAndToggleAddressForm();
     loadCustomerDetails();
 });

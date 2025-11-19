@@ -8,6 +8,24 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     let cart = []; // Holds items for the current order request
+    let currency = '$'; // Default Currency
+
+    /**
+     * Loads currency configuration
+     * 
+     */
+
+    async function loadCurrency() {
+        try {
+            const response = await fetch('/api/get-site-config');
+            const conf = await response.json();
+            if (conf.currency_symbol) {
+                currency = conf.currency_symbol;
+            }
+        } catch (e) {
+            // Use default currency
+        }
+    }
 
     /**
      * Renders the initial selection screen where the user chooses a request type.
@@ -113,7 +131,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <h3 class="title is-4">Your Order</h3>
                         <div id="cart-summary">Your order is empty.</div>
                         <hr>
-                        <p class="is-size-5 has-text-weight-bold">Total: $<span id="cart-total">0.00</span></p>
+                        <p class="is-size-5 has-text-weight-bold">Total: ${currency}<span id="cart-total">0.00</span></p>
                         <hr>
                         <button class="button is-primary is-fullwidth" id="proceed-to-checkout" disabled>Proceed to Checkout</button>
                     </div>
@@ -142,12 +160,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 itemCard.innerHTML = `
                     <div class="card">
                         <div class="card-content">
-                            <p class="title is-5">${service.service_name}</p>
+                            <p class="title is-5">${service.service_name}</p> 
                             <p class="subtitle is-6">${service.description || ''}</p>
-                            <p class="has-text-weight-bold">$${service.base_price.toFixed(2)}</p>
+                            <p class="has-text-weight-bold">${currency}${service.base_price.toFixed(2)}</p>
                         </div>
                         <footer class="card-footer">
-                            <a href="#" class="card-footer-item add-to-cart-button" data-service-id="${service.service_id}" data-name="${service.service_name}" data-price="${service.base_price}">Add to Order</a>
+                            <a href="#" class="card-footer-item add-to-cart-button" data-service-id="${service.service_id}" data-name="${service.service_name}" data-price="${service.base_price}" data-service-type="${service.service_type}">Add to Order</a>
                         </footer>
                     </div>
                 `;
@@ -160,7 +178,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     const serviceId = parseInt(event.target.dataset.serviceId, 10);
                     const name = event.target.dataset.name;
                     const price = parseFloat(event.target.dataset.price);
-                    addToCart(serviceId, name, price);
+                    const type = event.target.dataset.serviceType;
+                    addToCart(serviceId, name, price, type);
                 }
             });
 
@@ -195,7 +214,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <h3 class="title is-4">Your Order Summary</h3>
                         <div id="cart-summary">Your order is empty.</div>
                         <hr>
-                        <p class="is-size-5 has-text-weight-bold">Total: $<span id="cart-total">0.00</span></p>
+                        <p class="is-size-5 has-text-weight-bold">Total: ${currency}<span id="cart-total">0.00</span></p>
                         <hr>
                         <button class="button is-primary is-fullwidth" id="proceed-to-checkout" disabled>Proceed to Checkout</button>
                     </div>
@@ -225,7 +244,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 itemRow.innerHTML = `
                     <div>
                         <p class="title is-5">${service.service_name}</p>
-                        <p class="subtitle is-6 has-text-weight-bold">$${service.base_price.toFixed(2)} per load</p>
+                        <p class="subtitle is-6 has-text-weight-bold">${currency}${service.base_price.toFixed(2)} per load</p>
                     </div>
                     <div class="field has-addons">
                         <div class="control">
@@ -251,7 +270,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     const input = itemListContainer.querySelector(`input[data-service-id="${serviceId}"]`);
 
                     if (!service || !input) return;
-
+                    
                     let quantity = parseInt(input.value, 10);
 
                     if (action === 'increase') {
@@ -268,7 +287,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         if (cartItem) {
                             cartItem.quantity = quantity;
                         } else {
-                            cart.push({ service_id: serviceId, name: service.service_name, price: service.base_price, quantity: quantity });
+                            cart.push({ service_id: serviceId, name: service.service_name, price: service.base_price, quantity: quantity, service_type: 'laundry' });
                         }
                     } else if (cartItem) {
                         // Remove from cart if quantity is 0
@@ -286,12 +305,12 @@ document.addEventListener('DOMContentLoaded', () => {
     /**
      * Adds an item to the cart and updates the summary UI.
      */
-    function addToCart(serviceId, name, price) {
+    function addToCart(serviceId, name, price, serviceType) {
         const existingItem = cart.find(item => item.service_id === serviceId);
         if (existingItem) {
             existingItem.quantity++;
         } else {
-            cart.push({ service_id: serviceId, name, price, quantity: 1 });
+            cart.push({ service_id: serviceId, name, price, quantity: 1, service_type: serviceType });
         }
         updateCartSummary();
     }
@@ -444,12 +463,15 @@ document.addEventListener('DOMContentLoaded', () => {
         const urlParams = new URLSearchParams(window.location.search);
         const serviceType = urlParams.get('service_type');
         const serviceDef = serviceCardDefinitions[serviceType];
-
-        if (serviceType && serviceDef) {
-            renderServiceOrderForm(serviceType, serviceDef.title);
-        } else {
-            renderInitialSelection();
-        }
+ 
+        // Wait for the currency to load first, then render the page.
+        loadCurrency().then(() => {
+            if (serviceType && serviceDef) {
+                renderServiceOrderForm(serviceType, serviceDef.title);
+            } else {
+                renderInitialSelection();
+            }
+        });
     }
 
     // Start the process.

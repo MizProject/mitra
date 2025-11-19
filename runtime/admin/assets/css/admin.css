@@ -1,0 +1,52 @@
+/* /home/miku/Documents/openbuisnessbooking/runtime/admin/assets/css/admin.css */
+
+/* Basic styles for the admin panel layout */
+body {
+    background-color: #f0f2f5; /* Light grey background for admin */
+}
+
+/* Adjustments for the main content area */
+.column.is-10 {
+    padding: 20px;
+}
+
+/* Sidebar styling */
+#admin-sidebar {
+    background-color: #ffffff; /* White background for sidebar */
+    box-shadow: 0 2px 3px rgba(10, 10, 10, 0.1), 0 0 0 1px rgba(10, 10, 10, 0.1);
+}
+
+/* Navbar adjustments */
+.navbar.is-dark {
+    background-color: #363636; /* Darker navbar for admin */
+}
+
+/* Menu list active item styling */
+.menu-list a.is-active {
+    background-color: var(--primary-color, #00d1b2); /* Use primary color from theme_config.js if available, else Bulma's primary */
+    color: white;
+}
+
+/* Mobile-specific adjustments for the admin sidebar */
+@media screen and (max-width: 768px) {
+    /* Ensure the columns stack properly on mobile */
+    .columns {
+        flex-direction: column;
+    }
+
+    #admin-sidebar {
+        position: fixed; /* Make it an overlay */
+        top: 52px; /* Height of the navbar */
+        left: -100%; /* Initially hidden off-screen */
+        width: 250px; /* Fixed width for the sidebar */
+        max-width: 80vw; /* Don't let it go too wide on very small screens */
+        height: calc(100vh - 52px); /* Full height minus navbar */
+        z-index: 100; /* Ensure it's above other content */
+        transition: left 0.3s ease-in-out; /* Smooth slide-in animation */
+        box-shadow: 2px 0 5px rgba(0, 0, 0, 0.2); /* Add a shadow for depth */
+    }
+
+    #admin-sidebar.is-active {
+        left: 0; /* Slide into view */
+    }
+}

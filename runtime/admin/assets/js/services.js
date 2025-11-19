@@ -41,7 +41,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    function showServiceModal(service = null) {
+    async function showServiceModal(service = null) {
         const modalTitle = service ? `Edit Service: ${service.service_name}` : 'Add New Service';
         const submitButtonText = service ? 'Save Changes' : 'Create Service';
 
@@ -88,16 +88,37 @@ document.addEventListener('DOMContentLoaded', () => {
         modal.querySelector('#cancel-modal-form').addEventListener('click', cleanup);
 
         const modalServiceImageInput = modal.querySelector('#modal-service-image');
-        // Populate service type dropdown
         const serviceTypeSelect = modal.querySelector('#modal-service-type');
-        // These types are based on the available service detail tables from setup
-        const serviceTypes = ['hotel', 'repair', 'food', 'laundry']; 
-        serviceTypes.forEach(type => {
-            const option = document.createElement('option');
-            option.value = type;
-            option.textContent = type.charAt(0).toUpperCase() + type.slice(1); // Capitalize first letter
-            serviceTypeSelect.appendChild(option);
-        });
+        const serviceTypeField = serviceTypeSelect.closest('.field');
+
+        // Populate service type dropdown
+        try {
+            const response = await fetch('/api/admin/get-configured-service-types');
+            if (!response.ok) throw new Error('Failed to load service types.');
+            const configuredTypes = await response.json();
+
+            if (configuredTypes.length === 1) {
+                // If only one service type is configured, hide the dropdown and set its value.
+                serviceTypeField.style.display = 'none';
+                serviceTypeSelect.innerHTML = `<option value="${configuredTypes[0]}" selected>${configuredTypes[0]}</option>`;
+            } else if (configuredTypes.length > 1) {
+                // If multiple types are configured, show the dropdown with those options.
+                serviceTypeField.style.display = 'block';
+                serviceTypeSelect.innerHTML = '<option value="">Select a type</option>';
+                configuredTypes.forEach(type => {
+                    const option = new Option(type.charAt(0).toUpperCase() + type.slice(1), type);
+                    serviceTypeSelect.appendChild(option);
+                });
+            } else {
+                // Fallback for unconfigured systems.
+                serviceTypeField.style.display = 'block';
+                serviceTypeSelect.innerHTML = '<option value="">No service types configured</option>';
+            }
+        } catch (error) {
+            console.error("Error fetching configured service types:", error);
+            serviceTypeField.style.display = 'block';
+            serviceTypeSelect.innerHTML = '<option value="">Error loading types</option>';
+        }
 
         // If editing, select the current service's type
         if (service && service.service_type) {
@@ -163,6 +184,12 @@ document.addEventListener('DOMContentLoaded', () => {
             const statusBox = modal.querySelector('#modal-form-status');
             const submitButton = modal.querySelector('#submit-modal-form');
 
+            const serviceName = modal.querySelector('#modal-service-name').value;
+            if (!serviceName) {
+                statusBox.className = 'notification is-danger mt-4';
+                statusBox.textContent = 'Service Name is a required field.';
+                return;
+            }
             const formData = new FormData();
             formData.append('service_name', modal.querySelector('#modal-service-name').value);
             formData.append('service_type', modal.querySelector('#modal-service-type').value);

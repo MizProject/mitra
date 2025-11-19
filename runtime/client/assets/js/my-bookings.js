@@ -100,7 +100,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const items = JSON.parse(booking.items);
             if (items) {
                 items.forEach(item => {
-                    itemsHtml += `<li>${item.quantity}x ${item.service_name} - $${(item.price * item.quantity).toFixed(2)}</li>`;
+                    itemsHtml += `<li>${item.quantity}x ${item.service_name} - ${siteConfig.currency_symbol || '$'}${(item.price * item.quantity).toFixed(2)}</li>`;
                     if (item.service_type === 'laundry') {
                         isLaundryOrder = true;
                     }
@@ -108,7 +108,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             if (isLaundryOrder) {
-                itemsHtml += `</ul><div class="notification is-info is-light mt-3"><p class="is-size-7"><strong>Laundry Instructions:</strong> Please ensure items are ready for pickup on the scheduled date.</p></div><ul>`;
+                itemsHtml += `</ul><div class="notification is-info is-light mt-3"><p class="is-size-7"><strong>Laundry Instructions:</strong> Please ensure to present the QR Code at the laundry shop.</p></div><ul>`;
             }
         } catch (e) {
             itemsHtml += '<li>Error parsing booking items.</li>';
@@ -119,7 +119,9 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="content">
                 <p class="is-size-5 has-text-weight-bold">Booking #${booking.booking_id}</p>
                 <p><strong>Date:</strong> ${bookingDate}</p>
-                <p><strong>Total:</strong> $${booking.total_price.toFixed(2)}</p>
+                <p><strong>Total:</strong> ${siteConfig.currency_symbol || '$'}${booking.total_price.toFixed(2)}</p>
+                <p><strong>Pickup:</strong> ${formatMethod(booking.pickup_method)}</p>
+                <p><strong>Return:</strong> ${formatMethod(booking.return_method)}</p>
                 <p><strong>Items:</strong></p>
                 ${itemsHtml}
             </div>
@@ -131,6 +133,22 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
         `;
         return card;
+    }
+
+    /**
+     * Converts method codes into human-readable strings.
+     * @param {string} method - The method code (e.g., 'service_pickup').
+     * @returns {string} A user-friendly string.
+     */
+    function formatMethod(method) {
+        if (!method) return 'Not Specified';
+        const map = {
+            'service_pickup': 'Service Will Pick Up',
+            'customer_dropoff': 'Customer Will Drop Off',
+            'service_delivery': 'Service Will Deliver',
+            'customer_pickup': 'Customer Will Pick Up'
+        };
+        return map[method] || method;
     }
 
     /**
@@ -213,6 +231,31 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     /**
+     * Wraps text to fit within a max width on a canvas.
+     * @param {CanvasRenderingContext2D} context - The canvas rendering context.
+     * @param {string} text - The text to wrap.
+     * @param {number} maxWidth - The maximum width the text can occupy.
+     * @returns {string[]} An array of strings, where each string is a line of wrapped text.
+     */
+    function wrapText(context, text, maxWidth) {
+        const words = text.split(' ');
+        const lines = [];
+        let currentLine = words[0] || '';
+
+        for (let i = 1; i < words.length; i++) {
+            const word = words[i];
+            const width = context.measureText(currentLine + " " + word).width;
+            if (width < maxWidth) {
+                currentLine += " " + word;
+            } else {
+                lines.push(currentLine);
+                currentLine = word;
+            }
+        }
+        lines.push(currentLine);
+        return lines;
+    }
+    /**
      * Generates a full receipt-style image on a canvas.
      * @param {object} booking - The full booking object.
      * @param {string} canvasId - The ID of the canvas element to draw on.
@@ -232,6 +275,15 @@ document.addEventListener('DOMContentLoaded', () => {
         let height = 200; // Base height for header/footer
         height += items.length * lineSpacing; // Add space for each item
         height += 250; // Add space for QR code and footer
+
+        // Recalculate height based on wrapped text
+        items.forEach(item => {
+            const text = `${item.quantity}x ${item.service_name}`;
+            const lines = wrapText(ctx, text, width - (padding * 2) - 80); // 80 is for price column
+            if (lines.length > 1) {
+                height += (lines.length - 1) * lineSpacing;
+            }
+        });
 
         canvas.width = width;
         canvas.height = height;
@@ -270,6 +322,15 @@ document.addEventListener('DOMContentLoaded', () => {
             ctx.fillText(`For: ${booking.first_name || ''} ${booking.last_name || ''}`.trim(), width / 2, currentY);
             currentY += lineSpacing;
         }
+    
+    // --- Draw Delivery/Pickup Methods ---
+    if (booking.pickup_method || booking.return_method) {
+        ctx.font = '12px sans-serif';
+        if (booking.pickup_method) ctx.fillText(`Pickup: ${formatMethod(booking.pickup_method)}`, width / 2, currentY);
+        currentY += lineSpacing - 5;
+        if (booking.return_method) ctx.fillText(`Return: ${formatMethod(booking.return_method)}`, width / 2, currentY);
+        currentY += lineSpacing;
+    }
 
         // --- 3. Draw Items ---
         const drawLine = () => {
@@ -281,10 +342,20 @@ document.addEventListener('DOMContentLoaded', () => {
         ctx.textAlign = 'left';
         ctx.font = '14px monospace';
         if (items.length > 0) {
+            const priceColumnWidth = 80;
+            const maxTextWidth = width - (padding * 2) - priceColumnWidth;
+
             items.forEach(item => {
                 const itemText = `${item.quantity}x ${item.service_name}`;
-                const priceText = `$${(item.price * item.quantity).toFixed(2)}`;
-                ctx.fillText(itemText, padding, currentY);
+                const priceText = `${siteConfig.currency_symbol || '$'}${(item.price * item.quantity).toFixed(2)}`;
+                const lines = wrapText(ctx, itemText, maxTextWidth);
+
+                lines.forEach((line, index) => {
+                    ctx.fillText(line, padding, currentY);
+                    if (index < lines.length - 1) {
+                        currentY += lineSpacing;
+                    }
+                });
                 ctx.textAlign = 'right';
                 ctx.fillText(priceText, width - padding, currentY);
                 ctx.textAlign = 'left';
@@ -296,7 +367,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // --- 4. Draw Total ---
         ctx.font = 'bold 16px monospace';
         ctx.textAlign = 'right';
-        ctx.fillText(`Total: $${booking.total_price.toFixed(2)}`, width - padding, currentY);
+        ctx.fillText(`Total: ${siteConfig.currency_symbol || '$'}${booking.total_price.toFixed(2)}`, width - padding, currentY);
         currentY += sectionSpacing * 2;
 
         // --- 5. Draw QR Code ---

@@ -60,6 +60,8 @@ CREATE TABLE bookings (
     customer_id INTEGER,
     booking_date DATETIME DEFAULT CURRENT_TIMESTAMP,
     total_price REAL,
+    pickup_method TEXT, -- e.g., 'service_pickup', 'customer_dropoff'
+    return_method TEXT, -- e.g., 'service_delivery', 'customer_pickup'
     status TEXT NOT NULL DEFAULT 'Pending', -- e.g., 'Pending', 'Confirmed', 'In Progress', 'Completed', 'Cancelled'
     FOREIGN KEY (customer_id) REFERENCES customers (customer_id) ON DELETE SET NULL
 );
@@ -72,6 +74,13 @@ CREATE TABLE customers (
     first_name TEXT,
     last_name TEXT,
     phone_number TEXT,
+    -- Optional address fields
+    address_line1 TEXT,
+    address_line2 TEXT,
+    city TEXT,
+    state_province TEXT,
+    postal_code TEXT,
+    country TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 

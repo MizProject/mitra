@@ -103,6 +103,37 @@
                         </form>
                         <div class="notification is-hidden" id="password-status"></div>
                     </div>
+
+                    <!-- Address Details -->
+                    <div class="box" id="address-form-container" style="display: none;">
+                        <h2 class="title is-4">Your Address</h2>
+                        <form id="address-form">
+                            <div class="field">
+                                <label class="label">Address Line 1</label>
+                                <div class="control"><input class="input" type="text" id="address-line1" placeholder="123 Main St"></div>
+                            </div>
+                            <div class="field">
+                                <label class="label">Address Line 2 (Optional)</label>
+                                <div class="control"><input class="input" type="text" id="address-line2" placeholder="Apartment, studio, or floor"></div>
+                            </div>
+                            <div class="columns">
+                                <div class="column"><div class="field"><label class="label">City / Municipaliity<!-- Municipality is for other jurisdictions, Philippines differs the category of City and Municipality --></label><div class="control"><input class="input" type="text" id="city" placeholder="New York"></div></div></div>
+                                <div class="column"><div class="field"><label class="label">State / Province</label><div class="control"><input class="input" type="text" id="state-province" placeholder="NY"></div></div></div>
+                            </div>
+                            <div class="columns">
+                                <div class="column"><div class="field"><label class="label">Postal Code</label><div class="control"><input class="input" type="text" id="postal-code" placeholder="10001"></div></div></div>
+                                <div class="column"><div class="field"><label class="label">Country</label><div class="control"><input class="input" type="text" id="country" placeholder="USA"></div></div></div>
+                            </div>
+                            <div class="field">
+                                <button class="button is-primary" id="save-address-button">
+                                    <span class="icon"><i class="fas fa-save"></i></span>
+                                    <span>Save Address</span>
+                                </button>
+                            </div>
+                        </form>
+                        <div class="notification is-hidden" id="address-status"></div>
+                    </div>
+
                 </div>
             </div>
         </div>

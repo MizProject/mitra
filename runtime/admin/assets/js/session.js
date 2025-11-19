@@ -17,3 +17,9 @@
         window.location.href = '/admin-login';
     }
 })();
+
+/**
+ * Easter Egg: Navigates to the hidden about page.
+ * Can be called from the browser's developer console on any admin page.
+ */
+function visit_about() { window.location.href = '/admin/about'; }

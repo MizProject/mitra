@@ -17,6 +17,23 @@ async function loadSiteConfig() {
 }
 
 /**
+ * Converts method codes into human-readable strings.
+ * @param {string} method - The method code (e.g., 'service_pickup').
+ * @returns {string} A user-friendly string.
+ */
+function formatMethod(method) {
+    if (!method) return 'Not Specified';
+    const map = {
+        'service_pickup': 'Service Will Pick Up',
+        'customer_dropoff': 'Customer Will Drop Off',
+        'service_delivery': 'Service Will Deliver',
+        'customer_pickup': 'Customer Will Pick Up'
+    };
+    return map[method] || method;
+}
+
+
+/**
  * Fetches details for a given booking ID and displays them in a modal.
  * @param {string} bookingId - The ID of the booking to fetch.
  * @param {function} [onCloseCallback] - Optional callback to run when the modal is closed.
@@ -105,12 +122,24 @@ function populateInfoTab(booking) {
     let itemsHtml = items.map(item => `<li>${item.quantity}x ${item.service_name} (${currency}${item.price.toFixed(2)} each)</li>`).join('');
 
     container.innerHTML = `
-        <p><strong>Customer:</strong> ${booking.first_name} ${booking.last_name}</p>
-        <p><strong>Contact:</strong> <a href="mailto:${booking.email}">${booking.email}</a> | ${booking.phone_number || 'No phone'}</p>
+        <div class="field is-grouped is-grouped-multiline">
+            <div class="control">
+                <div class="tags has-addons">
+                    <span class="tag is-dark">Status</span>
+                    <span class="tag ${getStatusColor(booking.status)}">${booking.status}</span>
+                </div>
+            </div>
+        </div>
+        <p><strong>Customer:</strong> ${booking.first_name || ''} ${booking.last_name || ''}</p>
+        <p><strong>Contact:</strong> <a href="mailto:${booking.email}">${booking.email}</a> | ${booking.phone_number || 'Not Provided'}</p>
         <p><strong>Booking Date:</strong> ${new Date(booking.booking_date).toLocaleString()}</p>
         <p><strong>Total Price:</strong> ${currency}${booking.total_price.toFixed(2)}</p>
+        <hr style="margin: 1rem 0;">
+        <p><strong>Pickup Method:</strong> ${formatMethod(booking.pickup_method)}</p>
+        <p><strong>Return Method:</strong> ${formatMethod(booking.return_method)}</p>
+        <hr style="margin: 1rem 0;">
         <p><strong>Items:</strong></p>
-        <ul>${itemsHtml}</ul>
+        <ul style="margin-top: 0.5em;">${itemsHtml}</ul>
     `;
 }
 
@@ -173,6 +202,33 @@ function populateGenerateTab(booking) {
     });
 }
 
+/**
+ * Wraps text to fit within a max width on a canvas.
+ * @param {CanvasRenderingContext2D} context - The canvas rendering context.
+ * @param {string} text - The text to wrap.
+ * @param {number} maxWidth - The maximum width the text can occupy.
+ * @returns {string[]} An array of strings, where each string is a line of wrapped text.
+ */
+function wrapText(context, text, maxWidth) {
+    const words = text.split(' ');
+    const lines = [];
+    let currentLine = words[0];
+
+    for (let i = 1; i < words.length; i++) {
+        const word = words[i];
+        const width = context.measureText(currentLine + " " + word).width;
+        if (width < maxWidth) {
+            currentLine += " " + word;
+        } else {
+            lines.push(currentLine);
+            currentLine = word;
+        }
+    }
+    lines.push(currentLine);
+    return lines;
+}
+
+
 async function generateReceiptCanvas(booking, canvasId) {
     const canvas = document.getElementById(canvasId);
     if (!canvas) return;
@@ -218,16 +274,35 @@ async function generateReceiptCanvas(booking, canvasId) {
         currentY += lineSpacing;
     }
 
+    // --- Draw Status ---
+    ctx.font = 'bold 14px sans-serif';
+    ctx.fillStyle = getStatusColorHex(booking.status);
+    ctx.fillText(booking.status.toUpperCase(), width / 2, currentY);
+    currentY += sectionSpacing * 1.5;
+
     const drawLine = () => { currentY += sectionSpacing / 2; ctx.fillRect(padding, currentY, width - (padding * 2), 1); currentY += sectionSpacing; };
     drawLine();
     ctx.textAlign = 'left';
     ctx.font = '14px monospace';
     const currency = siteConfig.currency_symbol || '$';
     if (items.length > 0) {
+        const priceColumnWidth = 80; // Reserve 80px for the price
+        const maxTextWidth = width - (padding * 2) - priceColumnWidth;
+
         items.forEach(item => {
-            ctx.fillText(`${item.quantity}x ${item.service_name}`, padding, currentY);
+            const itemText = `${item.quantity}x ${item.service_name}`;
+            const priceText = `${currency}${(item.price * item.quantity).toFixed(2)}`;
+
+            const lines = wrapText(ctx, itemText, maxTextWidth);
+
+            lines.forEach((line, index) => {
+                ctx.fillText(line, padding, currentY);
+                if (index < lines.length - 1) {
+                    currentY += lineSpacing; // Add space for the next line of the same item
+                }
+            });
             ctx.textAlign = 'right';
-            ctx.fillText(`${currency}${(item.price * item.quantity).toFixed(2)}`, width - padding, currentY);
+            ctx.fillText(priceText, width - padding, currentY);
             ctx.textAlign = 'left';
             currentY += lineSpacing;
         });
@@ -260,4 +335,35 @@ async function generateReceiptCanvas(booking, canvasId) {
     ctx.fillStyle = '#888';
     ctx.fillText('Not an official receipt. For reference only.', width / 2, height - padding - 12);
     ctx.fillText('Powered by Mitra Systems | MizProject', width / 2, height - padding);
+}
+
+/**
+ * Gets a Bulma color class based on status.
+ * @param {string} status The booking status.
+ * @returns {string} A Bulma CSS class name.
+ */
+function getStatusColor(status) {
+    switch (status) {
+        case 'Completed': return 'is-success';
+        case 'Processing': return 'is-info';
+        case 'Canceled': return 'is-danger';
+        case 'Pending': return 'is-warning';
+        default: return 'is-light';
+    }
+}
+
+/**
+ * Gets a hex color code for the canvas based on status.
+ * @param {string} status The booking status.
+ * @returns {string} A hex color code.
+ */
+function getStatusColorHex(status) {
+    // These colors are chosen to be visible on a white background.
+    switch (status) {
+        case 'Completed': return '#238b4d'; // Green
+        case 'Processing': return '#20609f'; // Blue
+        case 'Canceled': return '#d43f3a'; // Red
+        case 'Pending': return '#f0ad4e'; // Orange
+        default: return '#4a4a4a'; // Dark Grey
+    }
 }

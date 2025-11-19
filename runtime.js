@@ -98,6 +98,30 @@ const db = new sqlite3.Database(dbPath, (err) => {
     } else {
         console.log(`Successfully connected to database ${dbPath}`);
         debugLogWriteToFile(`Successfully connected to database ${dbPath}`);
+
+        // --- Simple Schema Migration ---
+        // This block will add new columns to existing tables without causing errors on subsequent runs.
+        const migrations = [
+            "ALTER TABLE customers ADD COLUMN address_line1 TEXT",
+            "ALTER TABLE customers ADD COLUMN address_line2 TEXT",
+            "ALTER TABLE customers ADD COLUMN city TEXT",
+            "ALTER TABLE customers ADD COLUMN state_province TEXT",
+            "ALTER TABLE customers ADD COLUMN postal_code TEXT",
+            "ALTER TABLE customers ADD COLUMN country TEXT",
+            "ALTER TABLE bookings ADD COLUMN pickup_method TEXT",
+            "ALTER TABLE bookings ADD COLUMN return_method TEXT"
+        ];
+
+        db.serialize(() => {
+            migrations.forEach(migration => {
+                db.run(migration, (err) => {
+                    if (err && !err.message.includes('duplicate column name')) {
+                        console.error(`Migration failed: ${err.message}`);
+                    }
+                });
+            });
+            debugLogWriteToFile("Schema migrations checked/applied.");
+        });
     }
 });
 
@@ -149,6 +173,14 @@ app.get('/admin/settings', (req, res) => {
 app.get('/admin/search', (req, res) => {
     if (req.session.adminId) {
         res.sendFile(path.join(__dirname, 'runtime/admin/assets/html/search.html'));
+    } else {
+        res.redirect('/admin-login');
+    }
+});
+
+app.get('/admin/about', (req, res) => {
+    if (req.session.adminId) {
+        res.sendFile(path.join(__dirname, 'runtime/admin/assets/html/about.html'));
     } else {
         res.redirect('/admin-login');
     }
@@ -280,6 +312,8 @@ app.get('/api/admin/bookings/:bookingId', (req, res) => {
             b.booking_date,
             b.total_price,
             b.status,
+            b.pickup_method,
+            b.return_method,
             c.first_name,
             c.last_name,
             c.email,
@@ -361,11 +395,12 @@ app.post('/api/admin/services', upload.single('image'), (req, res) => {
     if (!req.session || !req.session.adminId) return res.status(401).json({ error: "Administrator not authenticated." });
 
     const { service_name, service_type, description, base_price, is_active } = req.body;
-    if (!service_name || !req.file) {
-        return res.status(400).json({ error: "Service Name and an Image are required." });
+    if (!service_name || !service_type) {
+        return res.status(400).json({ error: "Service Name and Service Type are required." });
     }
 
-    const image_url = `/runtime/data/images/${req.file.filename}`;
+    // Use uploaded file if available, otherwise use a placeholder.
+    const image_url = req.file ? `/runtime/data/images/${req.file.filename}` : '/assets/runtime/data/images/s/placeholder.png';
     const sql = 'INSERT INTO services (service_name, service_type, description, base_price, is_active, image_url) VALUES (?, ?, ?, ?, ?, ?)';
     db.run(sql, [service_name, service_type, description, base_price, is_active === 'true' ? 1 : 0, image_url], function(err) {
         if (err) return res.status(500).json({ error: "Database error creating service." });
@@ -378,6 +413,10 @@ app.put('/api/admin/services/:id', upload.single('image'), (req, res) => {
 
     const { id } = req.params;
     const { service_name, service_type, description, base_price, is_active } = req.body;
+
+    if (!service_name || !service_type) {
+        return res.status(400).json({ error: "Service Name and Service Type are required." });
+    }
 
     let sql = 'UPDATE services SET service_name = ?, service_type = ?, description = ?, base_price = ?, is_active = ?';
     const params = [service_name, service_type, description, base_price, is_active === 'true' ? 1 : 0];
@@ -426,7 +465,7 @@ app.get('/api/admin/search-bookings', (req, res) => {
         return res.status(401).json({ error: "Administrator not authenticated." });
     }
 
-    const { bookingId, email, status, startDate, endDate } = req.query;
+    const { bookingId, name, email, status, startDate, endDate } = req.query;
 
     let sql = `
         SELECT
@@ -441,6 +480,10 @@ app.get('/api/admin/search-bookings', (req, res) => {
     if (bookingId) {
         sql += ' AND b.booking_id = ?';
         params.push(bookingId);
+    }
+    if (name) {
+        sql += " AND (c.first_name LIKE ? OR c.last_name LIKE ? OR (c.first_name || ' ' || c.last_name) LIKE ?)";
+        params.push(`%${name}%`, `%${name}%`, `%${name}%`);
     }
     if (email) {
         sql += ' AND c.email LIKE ?';
@@ -608,7 +651,7 @@ app.get('/api/get-services', (req, res) => {
     debugLogWriteToFile("Received request for /api/get-services");
     const serviceType = req.query.type;
 
-    let sql = 'SELECT service_id, service_name, description, base_price, image_url FROM services WHERE is_active = 1';
+    let sql = 'SELECT service_id, service_name, service_type, description, base_price, image_url FROM services WHERE is_active = 1';
     const params = [];
 
     if (serviceType) {
@@ -666,6 +709,25 @@ app.get('/api/get-service-details', (req, res) => {
             return res.status(500).json({ error: err.message });
         }
         res.json(row || {});
+    });
+});
+
+app.get('/api/admin/get-configured-service-types', (req, res) => {
+    if (!req.session.adminId) {
+        return res.status(401).json({ error: "Administrator not authenticated." });
+    }
+
+    const sql = "SELECT name FROM sqlite_master WHERE type='table' AND name LIKE 'service_details_%'";
+
+    db.all(sql, [], (err, tables) => {
+        if (err) {
+            debugLogWriteToFile(`Database error fetching configured service types: ${err.message}`);
+            return res.status(500).json({ error: "Failed to retrieve configured service types." });
+        }
+        
+        // Extract the type from the table name (e.g., 'service_details_laundry' -> 'laundry')
+        const serviceTypes = tables.map(table => table.name.replace('service_details_', ''));
+        res.json(serviceTypes);
     });
 });
 
@@ -742,6 +804,8 @@ app.get('/api/customer/bookings', (req, res) => {
             b.booking_date,
             b.total_price,
             b.status,
+            b.pickup_method,
+            b.return_method,
             c.first_name,
             c.last_name,
             (
@@ -792,6 +856,50 @@ app.post('/api/customer/bookings/:bookingId/cancel', (req, res) => {
             return res.status(403).json({ error: "This booking cannot be canceled." });
         }
         res.json({ message: "Booking has been successfully canceled." });
+    });
+});
+
+app.get('/api/customer/bookings/:bookingId', (req, res) => {
+    debugLogWriteToFile("Request for a single customer booking received.");
+    if (!req.session || !req.session.customerId) {
+        return res.status(401).json({ error: "User not authenticated." });
+    }
+
+    const customerId = req.session.customerId;
+    const { bookingId } = req.params;
+
+    const sql = `
+        SELECT
+            b.booking_id,
+            b.booking_date,
+            b.total_price,
+            b.status,
+            b.pickup_method,
+            b.return_method,
+            c.first_name,
+            c.last_name,
+            c.email,
+            (
+                SELECT json_group_array(
+                    json_object(
+                        'service_name', s.service_name,
+                        'quantity', bi.quantity,
+                        'price', bi.price_at_time_of_booking
+                    )
+                )
+                FROM booking_items bi
+                JOIN services s ON s.service_id = bi.service_id
+                WHERE bi.booking_id = b.booking_id
+            ) AS items
+        FROM bookings b
+        JOIN customers c ON b.customer_id = c.customer_id
+        WHERE b.booking_id = ? AND b.customer_id = ?
+    `;
+
+    db.get(sql, [bookingId, customerId], (err, row) => {
+        if (err) return res.status(500).json({ error: "Failed to retrieve booking details." });
+        if (!row) return res.status(404).json({ error: "Booking not found or you do not have permission to view it." });
+        res.json(row);
     });
 });
 
@@ -903,7 +1011,7 @@ app.get('/api/customer/details', (req, res) => {
     }
 
     const customerId = req.session.customerId;
-    const sql = 'SELECT customer_id, email, first_name, last_name, phone_number FROM customers WHERE customer_id = ?';
+    const sql = 'SELECT * FROM customers WHERE customer_id = ?';
 
     db.get(sql, [customerId], (err, row) => {
         if (err) {
@@ -913,7 +1021,30 @@ app.get('/api/customer/details', (req, res) => {
         if (!row) {
             return res.status(404).json({ error: "Customer not found." });
         }
+        // Do not send the password hash to the client
+        delete row.password_hash;
         res.json(row);
+    });
+});
+
+app.post('/api/customer/update-address', (req, res) => {
+    debugLogWriteToFile("Request to update customer address received.");
+    if (!req.session || !req.session.customerId) {
+        return res.status(401).json({ error: "User not authenticated." });
+    }
+
+    const customerId = req.session.customerId;
+    const { address_line1, address_line2, city, state_province, postal_code, country } = req.body;
+
+    const sql = 'UPDATE customers SET address_line1=?, address_line2=?, city=?, state_province=?, postal_code=?, country=? WHERE customer_id = ?';
+    db.run(sql, [address_line1, address_line2, city, state_province, postal_code, country, customerId], function(err) {
+        if (err) {
+            return res.status(500).json({ error: "Failed to update address." });
+        }
+        if (this.changes === 0) {
+            return res.status(404).json({ error: "Customer not found." });
+        }
+        res.json({ message: "Address updated successfully." });
     });
 });
 
@@ -925,7 +1056,7 @@ app.post('/api/customer/create-booking', (req, res) => {
         return res.status(401).json({ error: "You must be logged in to place an order." });
     }
 
-    const { items } = req.body; // Expecting an array of { service_id, quantity }
+    const { items, pickup_method, return_method } = req.body;
     const customerId = req.session.customerId;
 
     if (!items || !Array.isArray(items) || items.length === 0) {
@@ -959,8 +1090,8 @@ app.post('/api/customer/create-booking', (req, res) => {
             }
 
             // 4. Create Booking Record
-            const bookingSql = 'INSERT INTO bookings (customer_id, total_price, status) VALUES (?, ?, ?)';
-            db.run(bookingSql, [customerId, totalPrice, 'Pending'], function(err) {
+            const bookingSql = 'INSERT INTO bookings (customer_id, total_price, status, pickup_method, return_method) VALUES (?, ?, ?, ?, ?)';
+            db.run(bookingSql, [customerId, totalPrice, 'Pending', pickup_method, return_method], function(err) {
                 if (err) {
                     db.run("ROLLBACK");
                     return res.status(500).json({ error: "Failed to create booking record." });
@@ -1019,6 +1150,7 @@ db.all("SELECT name FROM sqlite_master WHERE type='table' AND (name='services' O
     }
 
     app.listen(port, () => {
-        console.log(`Mitra Runtime server is running on http://localhost:${port}/`);
+        console.log(`Mitra Runtime server is running on http://localhost:${port}/\n`);
+        console.log(`Mitra Runtime Admin service, alongside the Runtime server, is running on http://localhost:${port}/admin`);
     });
 });
