@@ -1136,6 +1136,67 @@ app.post('/api/customer/logout', (req, res) => {
     });
 });
 
+app.post('/api/admin/verify-recovery-code', (req, res) => {
+    debugLogWriteToFile("Received request for /api/admin/verify-recovery-code");
+    const { username, recovery_code } = req.body;
+
+    if (!username || !recovery_code) {
+        return res.status(400).json({ error: "Username and recovery code are required." });
+    }
+
+    const sql = 'SELECT recovery_code FROM admin_login WHERE username = ?';
+    db.get(sql, [username], (err, row) => {
+        if (err) {
+            console.error(err.message);
+            debugLogWriteToFile(`Database error during recovery code verification: ${err.message}`);
+            return res.status(500).json({ error: "Database error during recovery." });
+        }
+
+        if (!row || !row.recovery_code) {
+            // Respond with a generic error to prevent username enumeration
+            return res.status(401).json({ success: false, error: "Invalid username or recovery code." });
+        }
+
+        // Constant-time comparison to mitigate timing attacks
+        const storedCodeBuffer = Buffer.from(row.recovery_code);
+        const providedCodeBuffer = Buffer.from(recovery_code);
+
+        if (storedCodeBuffer.length !== providedCodeBuffer.length) {
+            return res.status(401).json({ success: false, error: "Invalid username or recovery code." });
+        }
+
+        const match = crypto.timingSafeEqual(storedCodeBuffer, providedCodeBuffer);
+
+        res.json({ success: match, message: match ? "Recovery code is valid." : "Invalid username or recovery code." });
+    });
+});
+
+app.post('/api/admin/reset-password-with-recovery', async (req, res) => {
+    debugLogWriteToFile("Received request for /api/admin/reset-password-with-recovery");
+    const { username, recovery_code, new_password } = req.body;
+
+    if (!username || !recovery_code || !new_password) {
+        return res.status(400).json({ error: "Username, recovery code, and new password are required." });
+    }
+
+    // First, verify the recovery code (re-using logic from verify-recovery-code)
+    db.get('SELECT recovery_code FROM admin_login WHERE username = ?', [username], async (err, row) => {
+        if (err || !row || !row.recovery_code || !crypto.timingSafeEqual(Buffer.from(row.recovery_code), Buffer.from(recovery_code))) {
+            return res.status(401).json({ error: "Invalid username or recovery code." });
+        }
+
+        try {
+            const hashedPassword = await bcrypt.hash(new_password, 10);
+            db.run('UPDATE admin_login SET password = ? WHERE username = ?', [hashedPassword, username], function(err) {
+                if (err) return res.status(500).json({ error: "Failed to update password." });
+                res.json({ message: "Password reset successfully." });
+            });
+        } catch (error) {
+            res.status(500).json({ error: "Error hashing new password." });
+        }
+    });
+});
+
 // --- Server Start ---
 // Check for essential tables before starting the server to ensure the database is initialized.
 db.all("SELECT name FROM sqlite_master WHERE type='table' AND (name='services' OR name='promotion_banners')", (err, tables) => {

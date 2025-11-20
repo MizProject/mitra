@@ -35,8 +35,40 @@
                         </div>
                     </form>
                     <div class="notification is-danger is-hidden" id="login-status"></div>
+                    <div class="has-text-centered mt-4">
+                        <a id="forgot-password-link">Forgot your password?</a>
+                    </div>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <!-- Recovery Modal -->
+    <div class="modal" id="recovery-modal">
+        <div class="modal-background"></div>
+        <div class="modal-card">
+            <header class="modal-card-head">
+                <p class="modal-card-title">Password Recovery</p>
+                <button class="delete" aria-label="close"></button>
+            </header>
+            <section class="modal-card-body">
+                <!-- Step 1: Verify Code -->
+                <div id="recovery-step-1">
+                    <p class="mb-4">Enter your username and the recovery code you saved during setup.</p>
+                    <div class="field"><label class="label">Username</label><div class="control has-icons-left"><input class="input" type="text" placeholder="admin" required id="recovery-username"><span class="icon is-small is-left"><i class="fas fa-user"></i></span></div></div>
+                    <div class="field"><label class="label">Recovery Code</label><div class="control has-icons-left"><input class="input" type="text" placeholder="ABC-123" required id="recovery-code"><span class="icon is-small is-left"><i class="fas fa-key"></i></span></div></div>
+                    <button class="button is-primary" id="verify-recovery-code-button">Verify</button>
+                </div>
+                <!-- Step 2: Reset Password -->
+                <div id="recovery-step-2" class="is-hidden">
+                    <p class="mb-4">Verification successful. Please enter your new password.</p>
+                    <div class="field"><label class="label">New Password</label><div class="control has-icons-left"><input class="input" type="password" placeholder="********" required id="recovery-new-password"><span class="icon is-small is-left"><i class="fas fa-lock"></i></span></div></div>
+                    <div class="field"><label class="label">Confirm New Password</label><div class="control has-icons-left"><input class="input" type="password" placeholder="********" required id="recovery-confirm-password"><span class="icon is-small is-left"><i class="fas fa-lock"></i></span></div></div>
+                    <button class="button is-primary" id="reset-password-button">Reset Password</button>
+                </div>
+                <!-- Status Notification -->
+                <div class="notification is-hidden mt-4" id="recovery-status"></div>
+            </section>
         </div>
     </div>
 
