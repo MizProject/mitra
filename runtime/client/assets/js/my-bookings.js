@@ -272,9 +272,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const lineSpacing = 22;
         const sectionSpacing = 15;
         const items = JSON.parse(booking.items || '[]');
-        let height = 200; // Base height for header/footer
-        height += items.length * lineSpacing; // Add space for each item
-        height += 250; // Add space for QR code and footer
+        // Calculate dynamic height: Base for header + space for items + space for QR/footer
+        let height = 250 + (items.length * lineSpacing) + 250;
 
         // Recalculate height based on wrapped text
         items.forEach(item => {
@@ -327,7 +326,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (booking.pickup_method || booking.return_method) {
         ctx.font = '12px sans-serif';
         if (booking.pickup_method) ctx.fillText(`Pickup: ${formatMethod(booking.pickup_method)}`, width / 2, currentY);
-        currentY += lineSpacing - 5;
+        currentY += lineSpacing; // Ensure consistent line spacing
         if (booking.return_method) ctx.fillText(`Return: ${formatMethod(booking.return_method)}`, width / 2, currentY);
         currentY += lineSpacing;
     }
@@ -379,8 +378,6 @@ document.addEventListener('DOMContentLoaded', () => {
         // Manually draw the QR code to ensure it's a perfect square
         const qrModuleSize = qrSize / qr.getModuleCount();
         const qrX = (width - qrSize) / 2;
-        ctx.fillStyle = '#fff';
-        ctx.fillRect(qrX, currentY, qrSize, qrSize);
         for (let row = 0; row < qr.getModuleCount(); row++) {
             for (let col = 0; col < qr.getModuleCount(); col++) {
                 ctx.fillStyle = qr.isDark(row, col) ? '#000' : '#fff';

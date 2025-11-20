@@ -39,14 +39,14 @@ document.addEventListener('DOMContentLoaded', () => {
         const cardsContainer = document.getElementById('request-type-cards');
 
         // 1. Add the "Custom Order" option first
-        const customOrderCard = createRequestTypeCard({
-            type: 'custom',
-            title: 'Submit a Custom Request',
-            icon: 'fa-edit',
-            description: 'For special inquiries or services not listed.'
-        });
-        customOrderCard.addEventListener('click', () => renderCustomOrderForm());
-        cardsContainer.appendChild(customOrderCard);
+        // const customOrderCard = createRequestTypeCard({
+        //     type: 'custom',
+        //     title: 'Submit a Custom Request',
+        //     icon: 'fa-edit',
+        //     description: 'For special inquiries or services not listed.'
+        // });
+        // customOrderCard.addEventListener('click', () => renderCustomOrderForm());
+        // cardsContainer.appendChild(customOrderCard);
 
         // 2. Fetch and add cards for all other available service types
         try {
