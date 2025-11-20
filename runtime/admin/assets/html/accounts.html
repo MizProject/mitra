@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Accounts - Admin</title>
+    <link rel="stylesheet" href="/assets/npm/bulma/css/bulma.min.css">
+    <link rel="stylesheet" href="/assets/npm/fontawesome-free/css/all.min.css">
+    <link rel="stylesheet" href="/assets/runtime/client/assets/css/index.css">
+    <link rel="stylesheet" href="/assets/runtime/admin/assets/css/bookings.css"> <!-- Reusing some styles -->
+</head>
+<body>
+    <nav class="navbar is-dark" role="navigation" aria-label="main navigation">
+        <div class="navbar-brand">
+            <a class="navbar-item" href="/admin" id="navbar-brand-logo"><strong>Admin Panel</strong></a>
+            <a role="button" class="navbar-burger" aria-label="menu" aria-expanded="false" data-target="admin-sidebar">
+                <span aria-hidden="true"></span><span aria-hidden="true"></span><span aria-hidden="true"></span>
+            </a>
+        </div>
+        <div class="navbar-end">
+            <div class="navbar-item"><div class="buttons"><a class="button is-light" id="logout-button">Log out</a></div></div>
+        </div>
+    </nav>
+
+    <div class="columns" style="margin: 0;">
+        <!-- Sidebar Menu -->
+        <div class="column is-2 has-background-light" id="admin-sidebar" style="min-height: calc(100vh - 52px);">
+            <aside class="menu p-4">
+                <p class="menu-label">General</p>
+                <ul class="menu-list">
+                    <li><a href="/admin"><span class="icon-text"><span class="icon"><i class="fas fa-tachometer-alt"></i></span><span>Dashboard</span></span></a></li>
+                    <li><a href="/admin/search"><span class="icon-text"><span class="icon"><i class="fas fa-search"></i></span><span>Search</span></span></a></li>
+                </ul>
+                <p class="menu-label">Management</p>
+                <ul class="menu-list">
+                    <li><a href="/admin/bookings"><span class="icon-text"><span class="icon"><i class="fas fa-tasks"></i></span><span>Bookings</span></span></a></li>
+                    <li><a href="/admin/banners"><span class="icon-text"><span class="icon"><i class="fas fa-images"></i></span><span>Banners</span></span></a></li>
+                    <li><a href="/admin/services"><span class="icon-text"><span class="icon"><i class="fas fa-concierge-bell"></i></span><span>Services</span></span></a></li>
+                </ul>
+                <p class="menu-label">Administration</p>
+                <ul class="menu-list">
+                    <li><a href="/admin/settings"><span class="icon-text"><span class="icon"><i class="fas fa-cog"></i></span><span>Settings</span></span></a></li>
+                    <li><a href="/admin/accounts" class="is-active"><span class="icon-text"><span class="icon"><i class="fas fa-users-cog"></i></span><span>Accounts</span></span></a></li>
+                </ul>
+            </aside>
+        </div>
+
+        <!-- Main Content -->
+        <div class="column is-10">
+            <section class="section">
+                <div class="container">
+                    <h1 class="title">Account Management</h1>
+
+                    <div class="tabs is-boxed">
+                        <ul>
+                            <li class="is-active" data-tab="admins-tab"><a><span class="icon is-small"><i class="fas fa-user-shield"></i></span><span>Administrators</span></a></li>
+                            <li data-tab="customers-tab"><a><span class="icon is-small"><i class="fas fa-users"></i></span><span>Customers</span></a></li>
+                        </ul>
+                    </div>
+
+                    <div id="admins-tab" class="content-tab">
+                        <div class="is-flex is-justify-content-space-between is-align-items-center mb-4">
+                            <h2 class="title is-4">System Administrators</h2>
+                            <button class="button is-primary" id="add-admin-button"><span class="icon"><i class="fas fa-user-plus"></i></span><span>Add New Admin</span></button>
+                        </div>
+                        <div class="box">
+                            <div id="admins-list-container"><progress class="progress is-small is-primary" max="100">Loading...</progress></div>
+                        </div>
+                    </div>
+
+                    <div id="customers-tab" class="content-tab is-hidden">
+                        <div class="box">
+                            <div id="customers-list-container"><progress class="progress is-small is-primary" max="100">Loading...</progress></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <!-- Admin Form Modal -->
+    <div class="modal" id="admin-form-modal">
+        <div class="modal-background"></div>
+        <div class="modal-card">
+            <header class="modal-card-head">
+                <p class="modal-card-title" id="admin-modal-title">Add New Admin</p>
+                <button class="delete" aria-label="close"></button>
+            </header>
+            <section class="modal-card-body">
+                <form id="admin-form">
+                    <!-- Form fields will be dynamically injected here by JS -->
+                </form>
+                <div class="notification is-hidden mt-4" id="admin-form-status"></div>
+            </section>
+            <footer class="modal-card-foot">
+                <button class="button is-success" id="save-admin-button">Save changes</button>
+                <button class="button" id="cancel-admin-button">Cancel</button>
+            </footer>
+        </div>
+    </div>
+</body>
+<script src="/assets/runtime/admin/assets/js/session.js"></script>
+<script src="/assets/runtime/client/assets/js/theme_config.js"></script>
+<script src="/assets/runtime/admin/assets/js/logout.js"></script>
+<script src="/assets/runtime/admin/assets/js/navigation.js"></script>
+<script src="/assets/runtime/admin/assets/js/accounts.js"></script>
+</html>

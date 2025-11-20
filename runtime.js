@@ -12,6 +12,7 @@ const sqlite3 = require('sqlite3').verbose();
 const bcrypt = require('bcrypt');
 const session = require('express-session');
 const multer = require('multer');
+const { addressBook } = require('fontawesome');
 
 const app = express();
 const port = 3000; // Standard port for the main application
@@ -165,6 +166,14 @@ app.get('/admin/banners', (req, res) => {
 app.get('/admin/settings', (req, res) => {
     if (req.session.adminId) {
         res.sendFile(path.join(__dirname, 'runtime/admin/assets/html/settings.html'));
+    } else {
+        res.redirect('/admin-login');
+    }
+});
+
+app.get('/admin/accounts', (req, res) => {
+    if (req.session.adminId) {
+        res.sendFile(path.join(__dirname, 'runtime/admin/assets/html/accounts.html'));
     } else {
         res.redirect('/admin-login');
     }
@@ -534,6 +543,23 @@ app.get('/api/admin/banners', (req, res) => {
     });
 });
 
+app.get('/api/admin/customers', (req, res) => {
+    if (!req.session.adminId) {
+        return res.status(401).json({ error: "Administrator not authenticated." });
+    }
+    const sql = `
+        SELECT customer_id, email, first_name, last_name, phone_number, created_at 
+        FROM customers 
+        ORDER BY created_at DESC
+    `;
+    db.all(sql, [], (err, rows) => {
+        if (err) {
+            return res.status(500).json({ error: "Failed to retrieve customer accounts." });
+        }
+        res.json(rows || []);
+    });
+});
+
 app.post('/api/admin/banners', upload.single('image'), (req, res) => {
     if (!req.session || !req.session.adminId) return res.status(401).json({ error: "Administrator not authenticated." });
 
@@ -766,6 +792,34 @@ app.post('/api/admin/site-config', upload.fields([{ name: 'logo', maxCount: 1 },
         res.json({ message: "Site configuration updated successfully." });
     });
 });
+
+app.post('/api/admin/accounts/:id/regenerate-recovery-code', (req, res) => {
+    if (!req.session.adminId) {
+        return res.status(401).json({ error: "Administrator not authenticated." });
+    }
+
+    const { id } = req.params;
+    const newRecoveryCode = crypto.randomBytes(3).toString('hex').toUpperCase(); // Generate a new random code
+
+    const sql = 'UPDATE admin_login SET recovery_code = ? WHERE admin_id = ?';
+    db.run(sql, [newRecoveryCode, id], function(err) {
+        if (err) {
+            console.error(err.message);
+            debugLogWriteToFile(`Database error regenerating recovery code: ${err.message}`);
+            return res.status(500).json({ error: "Failed to regenerate recovery code." });
+        }
+        if (this.changes === 0) {
+            return res.status(404).json({ error: "Admin account not found." });
+        }
+
+        debugLogWriteToFile(`Recovery code regenerated for admin_id ${id}.`);
+        res.json({
+            message: "Recovery code regenerated successfully.",
+            newRecoveryCode: newRecoveryCode
+        });
+    });
+});
+
 
 app.post('/api/customer/register', async (req, res) => {
     debugLogWriteToFile("Received request for /api/customer/register");
@@ -1194,6 +1248,105 @@ app.post('/api/admin/reset-password-with-recovery', async (req, res) => {
         } catch (error) {
             res.status(500).json({ error: "Error hashing new password." });
         }
+    });
+});
+
+app.get('/api/admin/accounts', (req, res) => {
+    if (!req.session.adminId) {
+        return res.status(401).json({ error: "Administrator not authenticated." });
+    }
+    const sql = 'SELECT admin_id, username, privilege FROM admin_login ORDER BY username ASC';
+    db.all(sql, [], (err, rows) => {
+        if (err) return res.status(500).json({ error: "Failed to retrieve accounts." });
+        res.json(rows || []);
+    });
+});
+
+app.get('/api/admin/accounts/:id', (req, res) => {
+    if (!req.session.adminId) {
+        return res.status(401).json({ error: "Administrator not authenticated." });
+    }
+    const { id } = req.params;
+    const sql = 'SELECT admin_id, username, privilege FROM admin_login WHERE admin_id = ?';
+    db.get(sql, [id], (err, row) => {
+        if (err) return res.status(500).json({ error: "Database error." });
+        if (!row) return res.status(404).json({ error: "Account not found." });
+        res.json(row);
+    });
+});
+
+app.post('/api/admin/accounts', async (req, res) => {
+    if (!req.session.adminId) return res.status(401).json({ error: "Administrator not authenticated." });
+
+    const { username, password, privilege } = req.body;
+    if (!username || !password) {
+        return res.status(400).json({ error: "Username and password are required." });
+    }
+
+    try {
+        const hashedPassword = await bcrypt.hash(password, 10);
+        const sql = 'INSERT INTO admin_login (username, password, privilege) VALUES (?, ?, ?)';
+        db.run(sql, [username, hashedPassword, privilege || 'admin'], function(err) {
+            if (err) {
+                if (err.message.includes('UNIQUE constraint failed')) {
+                    return res.status(409).json({ error: 'This username is already taken.' });
+                }
+                return res.status(500).json({ error: "Database error creating account." });
+            }
+            res.status(201).json({ message: "Admin account created successfully.", adminId: this.lastID });
+        });
+    } catch (error) {
+        res.status(500).json({ error: "Failed to process password." });
+    }
+});
+
+app.put('/api/admin/accounts/:id', async (req, res) => {
+    if (!req.session.adminId) return res.status(401).json({ error: "Administrator not authenticated." });
+
+    const { id } = req.params;
+    const { username, password, privilege } = req.body;
+
+    if (!username) {
+        return res.status(400).json({ error: "Username is required." });
+    }
+
+    let sql, params;
+    if (password) {
+        try {
+            const hashedPassword = await bcrypt.hash(password, 10);
+            sql = 'UPDATE admin_login SET username = ?, password = ?, privilege = ? WHERE admin_id = ?';
+            params = [username, hashedPassword, privilege, id];
+        } catch (error) {
+            return res.status(500).json({ error: "Failed to process new password." });
+        }
+    } else {
+        sql = 'UPDATE admin_login SET username = ?, privilege = ? WHERE admin_id = ?';
+        params = [username, privilege, id];
+    }
+
+    db.run(sql, params, function(err) {
+        if (err) {
+            if (err.message.includes('UNIQUE constraint failed')) {
+                return res.status(409).json({ error: 'This username is already taken.' });
+            }
+            return res.status(500).json({ error: "Database error updating account." });
+        }
+        res.json({ message: "Admin account updated successfully." });
+    });
+});
+
+app.delete('/api/admin/accounts/:id', (req, res) => {
+    if (!req.session.adminId) return res.status(401).json({ error: "Administrator not authenticated." });
+
+    const { id } = req.params;
+    if (parseInt(id, 10) === req.session.adminId) {
+        return res.status(403).json({ error: "You cannot delete your own account." });
+    }
+
+    db.run('DELETE FROM admin_login WHERE admin_id = ?', [id], function(err) {
+        if (err) return res.status(500).json({ error: "Database error deleting account." });
+        if (this.changes === 0) return res.status(404).json({ error: "Account not found." });
+        res.json({ message: "Admin account deleted successfully." });
     });
 });
 

@@ -8,7 +8,7 @@ To access the administrator panel, navigate to `/admin` on your website's domain
 
 **Example**: `http://localhost:3000/admin`
 
-If you are not logged in, you will be redirected to the admin login page. Enter the administrator credentials that were created during the setup process.
+If you are not logged in, you will be redirected to the admin login page. Enter the administrator credentials that were created during the setup process. If you have forgotten your password, you can use the **"Forgot your password?"** link to reset it using your recovery code.
 
 ## 2. The Dashboard
 
@@ -117,6 +117,27 @@ The "Settings" page allows you to customize the global appearance of your client
 
 Click **"Save Configuration"** to apply any changes.
 
-## 7. Logging Out
+## 7. Managing Accounts
+
+The "Accounts" page, found under the "Administration" section of the sidebar, allows you to manage both administrator and customer user accounts. The page is divided into two tabs.
+
+### Administrators Tab
+
+This tab provides full control over the admin accounts for your Mitra instance.
+
+-   **Viewing Admins**: A list of all current administrators is displayed, showing their ID, username, and privilege level.
+-   **Adding a New Admin**: Click the **"Add New Admin"** button to open a form where you can create a new user with either 'Admin' (full access) or 'Viewer' (read-only) privileges.
+-   **Editing an Admin**: Click the "Edit" button next to an account to change its username or privilege level. You can also set a new password by filling in the password fields; leave them blank to keep the existing password.
+-   **Deleting an Admin**: Click the "Delete" button to permanently remove an admin account. For security, you cannot delete your own account while logged in.
+-   **Regenerating a Recovery Code**:
+    1.  Click the "Regenerate Recovery Code" button (key icon) next to an admin account.
+    2.  Confirm the action.
+    3.  A modal window will appear displaying the new recovery code. **Save this code immediately in a secure location.** The old code will no longer be valid. This is useful if an administrator loses their recovery code.
+
+### Customers Tab
+
+This tab displays a read-only list of all registered customers on your site. It includes their customer ID, name, contact information, and the date they registered, providing a quick way to view your user base.
+
+## 8. Logging Out
 
 To securely log out of the admin panel, click the **"Logout"** button in the main navigation bar.
