@@ -318,6 +318,12 @@ app.get('/api/admin/bookings/:bookingId', (req, res) => {
             c.last_name,
             c.email,
             c.phone_number,
+            c.address_line1,
+            c.address_line2,
+            c.city,
+            c.state_province,
+            c.postal_code,
+            c.country,
             (
                 SELECT json_group_array(
                     json_object(

@@ -121,6 +121,19 @@ function populateInfoTab(booking) {
     const currency = siteConfig.currency_symbol || '$';
     let itemsHtml = items.map(item => `<li>${item.quantity}x ${item.service_name} (${currency}${item.price.toFixed(2)} each)</li>`).join('');
 
+    // --- Address Formatting ---
+    let addressHtml = '';
+    // Only show the address if a pickup or delivery by the service is involved.
+    if (booking.pickup_method === 'service_pickup' || booking.return_method === 'service_delivery') {
+        const addressParts = [
+            booking.address_line1,
+            booking.address_line2,
+            `${booking.city || ''} ${booking.state_province || ''} ${booking.postal_code || ''}`.trim(),
+            booking.country
+        ].filter(part => part); // Filter out empty or null parts
+
+        addressHtml = addressParts.length > 0 ? `<p><strong>Address:</strong><br>${addressParts.join('<br>')}</p>` : '<p><strong>Address:</strong> Not provided.</p>';
+    }
     container.innerHTML = `
         <div class="field is-grouped is-grouped-multiline">
             <div class="control">
@@ -132,6 +145,7 @@ function populateInfoTab(booking) {
         </div>
         <p><strong>Customer:</strong> ${booking.first_name || ''} ${booking.last_name || ''}</p>
         <p><strong>Contact:</strong> <a href="mailto:${booking.email}">${booking.email}</a> | ${booking.phone_number || 'Not Provided'}</p>
+        ${addressHtml}
         <p><strong>Booking Date:</strong> ${new Date(booking.booking_date).toLocaleString()}</p>
         <p><strong>Total Price:</strong> ${currency}${booking.total_price.toFixed(2)}</p>
         <hr style="margin: 1rem 0;">
