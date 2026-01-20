@@ -1,0 +1,18 @@
+{
+    "sqltools.useNodeRuntime": true,
+    "sqltools.connections": [
+        {
+            "previewLimit": 500,
+            "driver": "SQLite",
+            "database": "${workspaceFolder:mitra}/database.sqlite",
+            "name": "a",
+            "group": "a"
+        },
+        {
+            "previewLimit": 50,
+            "driver": "SQLite",
+            "name": "aa",
+            "database": "${workspaceFolder:mitra}/database.sqlite"
+        }
+    ]
+}

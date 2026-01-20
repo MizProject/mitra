@@ -155,6 +155,10 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'setup/index.html'))
 })
 
+app.get('/troubleshoot', (req, res) => {
+    res.sendFile(path.join(__dirname, 'setup/troubleshoot.html'))
+})
+
 // Use body-parser for all API routes below
 app.use(bodyParser.json());
 
@@ -162,6 +166,20 @@ app.use(bodyParser.json());
 // API Calls here
 
 const dbPath = path.join(__dirname, 'database.sqlite'); // Remember that database.sqlite is at root project dir, do not modify unless if you switch the database tables
+
+if (!fs.existsSync(dbPath)) {
+    console.log(`Database file not found at ${dbPath}. Creating a new one...`);
+    debugLogWriteToFile(`Database file not found at ${dbPath}. Creating a new one...`);
+    try {
+        fs.closeSync(fs.openSync(dbPath, 'w'));
+        console.log("New database file created successfully.");
+        debugLogWriteToFile("New database file created successfully.");
+    } catch (e) {
+        console.error(`Failed to create database file: ${e.message}`);
+        debugLogWriteToFile(`Failed to create database file: ${e.message}`);
+    }
+}
+
 const db = new sqlite3.Database(dbPath, (err) => {
     if (err) {
         console.error(`Error opening database ${dbPath}: ${err.message}`);
@@ -169,6 +187,24 @@ const db = new sqlite3.Database(dbPath, (err) => {
     } else {
         console.log(`Successfully connected to database ${dbPath}`);
         debugLogWriteToFile(`Successfully connected to database ${dbPath}`);
+
+        // --- Schema Synchronization ---
+        // Ensure existing tables have the latest columns (e.g. schedule_date)
+        const migrations = [
+            "ALTER TABLE bookings ADD COLUMN schedule_date TEXT",
+            "ALTER TABLE bookings ADD COLUMN schedule_time TEXT"
+        ];
+        db.serialize(() => {
+            migrations.forEach(migration => {
+                db.run(migration, (err) => {
+                    // Ignore errors if column exists or table doesn't exist yet
+                    if (err && !err.message.includes('duplicate column name') && !err.message.includes('no such table')) {
+                        console.error(`Migration warning: ${err.message}`);
+                    }
+                });
+            });
+        });
+
         // Create benchmark table if it doesn't exist
         // Meant to autospawn
         db.run(`CREATE TABLE IF NOT EXISTS benchmark_test (
@@ -541,6 +577,131 @@ app.post('/api/setup-servicing-tables', (req, res) => {
             debugLogWriteToFile(`Servicing tables created successfully (${createdCount} tables).`);
             res.json({ message: `Successfully created ${createdCount} e-commerce service tables.` });
         });
+    });
+});
+
+app.post('/api/troubleshoot/fix-schema', (req, res) => {
+    debugLogWriteToFile("Received request for /api/troubleshoot/fix-schema");
+    const migrations = [
+        "ALTER TABLE bookings ADD COLUMN schedule_date TEXT",
+        "ALTER TABLE bookings ADD COLUMN schedule_time TEXT"
+    ];
+    
+    let completed = 0;
+    let errors = [];
+
+    db.serialize(() => {
+        migrations.forEach(migration => {
+            db.run(migration, (err) => {
+                if (err && !err.message.includes('duplicate column name') && !err.message.includes('no such table')) {
+                    errors.push(err.message);
+                }
+                completed++;
+                if (completed === migrations.length) {
+                    if (errors.length > 0) {
+                        res.status(500).json({ error: "Errors: " + errors.join(", ") });
+                    } else {
+                        res.json({ message: "Schema synchronization complete." });
+                    }
+                }
+            });
+        });
+    });
+});
+
+app.get('/api/troubleshoot/check-schema', (req, res) => {
+    debugLogWriteToFile("Received request for /api/troubleshoot/check-schema");
+    const schemaPath = path.join(__dirname, '.servicing_vischem.sql');
+
+    fs.readFile(schemaPath, 'utf8', (err, sqlScript) => {
+        if (err) {
+            return res.status(500).json({ error: "Could not read schema file." });
+        }
+
+        const expectedSchema = {};
+        // Remove comments
+        const cleanScript = sqlScript.replace(/--.*$/gm, '');
+        // Split by semicolon to get statements
+        const statements = cleanScript.split(';').map(s => s.trim()).filter(s => s.length > 0);
+
+        statements.forEach(stmt => {
+            // Match CREATE TABLE
+            const match = stmt.match(/CREATE\s+TABLE(?:\s+IF\s+NOT\s+EXISTS)?\s+`?([a-zA-Z0-9_]+)`?\s*\(([\s\S]+)\)/i);
+            if (match) {
+                const tableName = match[1];
+                const body = match[2];
+                const columns = [];
+
+                // Split by comma to get definitions. 
+                // Note: This simple split assumes no commas within column definitions (like DECIMAL(5,2)), 
+                // which holds true for the current .servicing_vischem.sql file.
+                const defs = body.split(',');
+                defs.forEach(def => {
+                    def = def.trim();
+                    if (!def) return;
+                    
+                    // Check for constraints defined on their own lines
+                    const upperDef = def.toUpperCase();
+                    if (upperDef.startsWith('FOREIGN KEY') || 
+                        upperDef.startsWith('PRIMARY KEY') || 
+                        upperDef.startsWith('CONSTRAINT') ||
+                        upperDef.startsWith('UNIQUE') ||
+                        upperDef.startsWith('CHECK')) {
+                        return;
+                    }
+
+                    // Extract column name (first word)
+                    const parts = def.split(/\s+/);
+                    if (parts.length > 0) {
+                        let colName = parts[0].replace(/`/g, '').replace(/"/g, '');
+                        columns.push(colName);
+                    }
+                });
+                expectedSchema[tableName] = columns;
+            }
+        });
+
+        const results = { missingTables: [], optionalMissingTables: [], missingColumns: {}, status: 'ok' };
+        const tablesToCheck = Object.keys(expectedSchema);
+        let completed = 0;
+
+        if (tablesToCheck.length === 0) return res.json(results);
+
+        tablesToCheck.forEach(table => {
+            db.all(`PRAGMA table_info(${table})`, (err, rows) => {
+                if (err || !rows || rows.length === 0) {
+                    // If PRAGMA fails or returns empty, check if table exists in master
+                    db.get("SELECT name FROM sqlite_master WHERE type='table' AND name=?", [table], (err, row) => {
+                        if (!row) {
+                            if (table.startsWith('service_details_')) {
+                                results.optionalMissingTables.push(table);
+                            } else {
+                                results.missingTables.push(table);
+                            }
+                        }
+                        checkNext();
+                    });
+                } else {
+                    const existingCols = rows.map(r => r.name);
+                    const expectedCols = expectedSchema[table];
+                    const missing = expectedCols.filter(c => !existingCols.includes(c));
+                    if (missing.length > 0) results.missingColumns[table] = missing;
+                    checkNext();
+                }
+            });
+        });
+
+        function checkNext() {
+            completed++;
+            if (completed === tablesToCheck.length) {
+                if (results.missingTables.length > 0 || Object.keys(results.missingColumns).length > 0) {
+                    results.status = 'mismatch';
+                } else if (results.optionalMissingTables.length > 0) {
+                    results.status = 'partial';
+                }
+                res.json(results);
+            }
+        }
     });
 });
 

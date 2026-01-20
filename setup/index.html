@@ -29,6 +29,38 @@
                     </div>
                 </div>
         </div>
+        <div class="has-text-centered mt-4">
+            <button id="troubleshoot-btn" class="button is-text has-text-grey-light is-small">I am here to troubleshoot and fix</button>
+        </div>
+    </div>
+
+    <!-- Troubleshoot Login Modal -->
+    <div id="troubleshoot-login-modal" class="modal">
+        <div class="modal-background"></div>
+        <div class="modal-card">
+            <header class="modal-card-head">
+                <p class="modal-card-title">Admin Access Required</p>
+                <button class="delete" aria-label="close"></button>
+            </header>
+            <section class="modal-card-body">
+                <form id="troubleshoot-login-form">
+                    <div class="field">
+                        <label class="label">Username</label>
+                        <div class="control">
+                            <input class="input" type="text" id="ts-username" required>
+                        </div>
+                    </div>
+                    <div class="field">
+                        <label class="label">Password</label>
+                        <div class="control">
+                            <input class="input" type="password" id="ts-password" required>
+                        </div>
+                    </div>
+                    <div id="ts-login-error" class="notification is-danger is-hidden"></div>
+                    <button type="submit" class="button is-primary is-fullwidth">Login & Fix</button>
+                </form>
+            </section>
+        </div>
     </div>
 </body>
 <!-- FontAwesome Deps -->
@@ -56,4 +88,56 @@
 <script src="/assets/setup/js/upload.js"></script>
 <!-- Recovery code -->
 <script src="/assets/setup/js/recovery_code.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const tsBtn = document.getElementById('troubleshoot-btn');
+        const tsModal = document.getElementById('troubleshoot-login-modal');
+        const tsForm = document.getElementById('troubleshoot-login-form');
+        const tsError = document.getElementById('ts-login-error');
+
+        if (tsBtn && tsModal) {
+            tsBtn.addEventListener('click', () => {
+                tsModal.classList.add('is-active');
+            });
+
+            const close = () => {
+                tsModal.classList.remove('is-active');
+                tsError.classList.add('is-hidden');
+                tsForm.reset();
+            }
+
+            tsModal.querySelectorAll('.delete, .modal-background').forEach(el => el.addEventListener('click', close));
+
+            tsForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const btn = tsForm.querySelector('button[type="submit"]');
+                btn.classList.add('is-loading');
+                tsError.classList.add('is-hidden');
+
+                const username = document.getElementById('ts-username').value;
+                const password = document.getElementById('ts-password').value;
+
+                try {
+                    const res = await fetch('/api/login', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ username, password })
+                    });
+
+                    if (res.ok) {
+                        window.location.href = '/troubleshoot';
+                    } else {
+                        const data = await res.json();
+                        throw new Error(data.error || 'Login failed');
+                    }
+                } catch (err) {
+                    tsError.textContent = err.message;
+                    tsError.classList.remove('is-hidden');
+                } finally {
+                    btn.classList.remove('is-loading');
+                }
+            });
+        }
+    });
+</script>
 </html>

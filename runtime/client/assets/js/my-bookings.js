@@ -10,6 +10,16 @@ document.addEventListener('DOMContentLoaded', () => {
         'Canceled': document.getElementById('canceled-tab'),
     };
 
+    // --- Socket.IO Connection ---
+    // Dynamically load the Socket.IO client script from the server
+    const script = document.createElement('script');
+    script.src = '/socket.io/socket.io.js';
+    script.onload = () => {
+        const socket = io();
+        socket.on('booking_update', () => loadBookings());
+    };
+    document.head.appendChild(script);
+
     /**
      * Handles tab switching UI.
      */
@@ -120,6 +130,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <p class="is-size-5 has-text-weight-bold">Booking #${booking.booking_id}</p>
                 <p><strong>Date:</strong> ${bookingDate}</p>
                 <p><strong>Total:</strong> ${siteConfig.currency_symbol || '$'}${booking.total_price.toFixed(2)}</p>
+                <p><strong>Scheduled:</strong> ${booking.schedule_date || 'Not Specified'} ${booking.schedule_time ? 'at ' + booking.schedule_time : ''}</p>
                 <p><strong>Pickup:</strong> ${formatMethod(booking.pickup_method)}</p>
                 <p><strong>Return:</strong> ${formatMethod(booking.return_method)}</p>
                 <p><strong>Items:</strong></p>
@@ -273,7 +284,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const sectionSpacing = 15;
         const items = JSON.parse(booking.items || '[]');
         // Calculate dynamic height: Base for header + space for items + space for QR/footer
-        let height = 250 + (items.length * lineSpacing) + 250;
+        let height = 275 + (items.length * lineSpacing) + 250;
 
         // Recalculate height based on wrapped text
         items.forEach(item => {
@@ -319,6 +330,12 @@ document.addEventListener('DOMContentLoaded', () => {
         if (booking.first_name || booking.last_name) {
             ctx.font = '14px sans-serif';
             ctx.fillText(`For: ${booking.first_name || ''} ${booking.last_name || ''}`.trim(), width / 2, currentY);
+            currentY += lineSpacing;
+        }
+
+        if (booking.schedule_date) {
+            ctx.font = '14px sans-serif';
+            ctx.fillText(`Scheduled: ${booking.schedule_date} ${booking.schedule_time ? '@ ' + booking.schedule_time : ''}`, width / 2, currentY);
             currentY += lineSpacing;
         }
     

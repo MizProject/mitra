@@ -133,7 +133,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <hr>
                         <p class="is-size-5 has-text-weight-bold">Total: ${currency}<span id="cart-total">0.00</span></p>
                         <hr>
-                        <button class="button is-primary is-fullwidth" id="proceed-to-checkout" disabled>Proceed to Checkout</button>
+                        <button class="button is-primary is-fullwidth" id="proceed-to-checkout" disabled>Proceed to Book</button>
                     </div>
                 </div>
             </div>
@@ -216,7 +216,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <hr>
                         <p class="is-size-5 has-text-weight-bold">Total: ${currency}<span id="cart-total">0.00</span></p>
                         <hr>
-                        <button class="button is-primary is-fullwidth" id="proceed-to-checkout" disabled>Proceed to Checkout</button>
+                        <button class="button is-primary is-fullwidth" id="proceed-to-checkout" disabled>Proceed to Book</button>
                     </div>
                 </div>
             </div>

@@ -16,8 +16,12 @@
     "pica": "^9.0.1",
     "qrcode-generator": "^2.0.4",
     "sequelize": "^6.37.7",
+    "socket.io": "^4.8.3",
     "sqlite3": "^5.1.7",
     "vanilla-picker": "^2.12.3"
+  },
+  "overrides": {
+    "tar": "^7.5.3"
   },
   "scripts": {
     "start": "node runtime.js",

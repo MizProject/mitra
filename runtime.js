@@ -9,6 +9,8 @@ const mkdirp = require('mkdirp');
 const crypto = require('crypto');
 const express = require('express');
 const sqlite3 = require('sqlite3').verbose();
+const http = require('http');
+const { Server } = require("socket.io");
 const bcrypt = require('bcrypt');
 const session = require('express-session');
 const multer = require('multer');
@@ -53,9 +55,23 @@ debugLogWriteToFile("Core dependencies loaded.");
 app.use(express.json()); // Modern replacement for body-parser
 debugLogWriteToFile("Body-parser JSON middleware enabled.");
 
+// --- Session Persistence ---
+// Load or generate a persistent session secret to keep users logged in across server restarts.
+const secretFilePath = path.join(__dirname, 'runtime', 'data', 'session_secret.txt');
+let sessionSecret;
+if (fs.existsSync(secretFilePath)) {
+    sessionSecret = fs.readFileSync(secretFilePath, 'utf8');
+} else {
+    sessionSecret = crypto.randomBytes(32).toString('hex');
+    try {
+        fs.writeFileSync(secretFilePath, sessionSecret);
+    } catch (e) {
+        console.error("Failed to write session secret to disk:", e);
+    }
+}
 // Session middleware
 app.use(session({
-    secret: crypto.randomBytes(32).toString('hex'), // A strong, random secret
+    secret: sessionSecret, // Use the persistent secret
     resave: false,
     saveUninitialized: true,
     cookie: {
@@ -90,6 +106,14 @@ const upload = multer({ storage: storage });
 
 debugLogWriteToFile("Static asset routes configured.");
 
+// --- HTTP & WebSocket Server Setup ---
+const server = http.createServer(app);
+const io = new Server(server);
+
+function broadcastUpdate(data) {
+    io.emit('booking_update', data);
+}
+
 // --- Database Connection ---
 const dbPath = path.join(__dirname, 'database.sqlite');
 const db = new sqlite3.Database(dbPath, (err) => {
@@ -100,28 +124,26 @@ const db = new sqlite3.Database(dbPath, (err) => {
         console.log(`Successfully connected to database ${dbPath}`);
         debugLogWriteToFile(`Successfully connected to database ${dbPath}`);
 
-        // --- Simple Schema Migration ---
-        // This block will add new columns to existing tables without causing errors on subsequent runs.
-        const migrations = [
-            "ALTER TABLE customers ADD COLUMN address_line1 TEXT",
-            "ALTER TABLE customers ADD COLUMN address_line2 TEXT",
-            "ALTER TABLE customers ADD COLUMN city TEXT",
-            "ALTER TABLE customers ADD COLUMN state_province TEXT",
-            "ALTER TABLE customers ADD COLUMN postal_code TEXT",
-            "ALTER TABLE customers ADD COLUMN country TEXT",
-            "ALTER TABLE bookings ADD COLUMN pickup_method TEXT",
-            "ALTER TABLE bookings ADD COLUMN return_method TEXT"
-        ];
+        // --- Schema Verification ---
+        // Check if the database schema is up to date.
+        const requiredSchema = {
+            'customers': ['address_line1', 'address_line2', 'city', 'state_province', 'postal_code', 'country'],
+            'bookings': ['pickup_method', 'return_method', 'schedule_date', 'schedule_time']
+        };
 
-        db.serialize(() => {
-            migrations.forEach(migration => {
-                db.run(migration, (err) => {
-                    if (err && !err.message.includes('duplicate column name')) {
-                        console.error(`Migration failed: ${err.message}`);
-                    }
-                });
+        Object.entries(requiredSchema).forEach(([table, columns]) => {
+            db.all(`PRAGMA table_info(${table})`, (err, rows) => {
+                if (err || !rows) return;
+
+                const existingColumns = rows.map(row => row.name);
+                const missingColumns = columns.filter(col => !existingColumns.includes(col));
+
+                if (missingColumns.length > 0) {
+                    const msg = `[WARNING] Database schema mismatch detected in table '${table}'. Missing columns: ${missingColumns.join(', ')}. Please run 'node setup.js' to update your database schema.`;
+                    console.warn(`\n${msg}\n`);
+                    debugLogWriteToFile(msg);
+                }
             });
-            debugLogWriteToFile("Schema migrations checked/applied.");
         });
     }
 });
@@ -290,6 +312,8 @@ app.get('/api/admin/bookings', (req, res) => {
             b.booking_date,
             b.total_price,
             b.status,
+            b.schedule_date,
+            b.schedule_time,
             c.first_name,
             c.last_name,
             c.email
@@ -323,6 +347,8 @@ app.get('/api/admin/bookings/:bookingId', (req, res) => {
             b.status,
             b.pickup_method,
             b.return_method,
+            b.schedule_date,
+            b.schedule_time,
             c.first_name,
             c.last_name,
             c.email,
@@ -484,7 +510,7 @@ app.get('/api/admin/search-bookings', (req, res) => {
 
     let sql = `
         SELECT
-            b.booking_id, b.booking_date, b.total_price, b.status,
+            b.booking_id, b.booking_date, b.total_price, b.status, b.schedule_date, b.schedule_time,
             c.first_name, c.last_name, c.email
         FROM bookings b
         LEFT JOIN customers c ON b.customer_id = c.customer_id
@@ -635,6 +661,7 @@ app.put('/api/admin/bookings/:bookingId/status', (req, res) => {
     const sql = 'UPDATE bookings SET status = ? WHERE booking_id = ?';
     db.run(sql, [status, bookingId], function(err) {
         if (err) return res.status(500).json({ error: "Failed to update booking status." });
+        broadcastUpdate({ type: 'booking_update', bookingId, status });
         res.json({ message: "Booking status updated successfully." });
     });
 });
@@ -866,6 +893,8 @@ app.get('/api/customer/bookings', (req, res) => {
             b.status,
             b.pickup_method,
             b.return_method,
+            b.schedule_date,
+            b.schedule_time,
             c.first_name,
             c.last_name,
             (
@@ -936,6 +965,8 @@ app.get('/api/customer/bookings/:bookingId', (req, res) => {
             b.status,
             b.pickup_method,
             b.return_method,
+            b.schedule_date,
+            b.schedule_time,
             c.first_name,
             c.last_name,
             c.email,
@@ -1116,7 +1147,7 @@ app.post('/api/customer/create-booking', (req, res) => {
         return res.status(401).json({ error: "You must be logged in to place an order." });
     }
 
-    const { items, pickup_method, return_method } = req.body;
+    const { items, pickup_method, return_method, schedule_date, schedule_time } = req.body;
     const customerId = req.session.customerId;
 
     if (!items || !Array.isArray(items) || items.length === 0) {
@@ -1150,8 +1181,8 @@ app.post('/api/customer/create-booking', (req, res) => {
             }
 
             // 4. Create Booking Record
-            const bookingSql = 'INSERT INTO bookings (customer_id, total_price, status, pickup_method, return_method) VALUES (?, ?, ?, ?, ?)';
-            db.run(bookingSql, [customerId, totalPrice, 'Pending', pickup_method, return_method], function(err) {
+            const bookingSql = 'INSERT INTO bookings (customer_id, total_price, status, pickup_method, return_method, schedule_date, schedule_time) VALUES (?, ?, ?, ?, ?, ?, ?)';
+            db.run(bookingSql, [customerId, totalPrice, 'Pending', pickup_method, return_method, schedule_date, schedule_time], function(err) {
                 if (err) {
                     db.run("ROLLBACK");
                     return res.status(500).json({ error: "Failed to create booking record." });
@@ -1369,7 +1400,7 @@ db.all("SELECT name FROM sqlite_master WHERE type='table' AND (name='services' O
         process.exit(1);
     }
 
-    app.listen(port, () => {
+    server.listen(port, () => {
         console.log(`Mitra Runtime server is running on http://localhost:${port}/\n`);
         console.log(`Mitra Runtime Admin service, alongside the Runtime server, is running on http://localhost:${port}/admin`);
     });

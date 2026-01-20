@@ -199,11 +199,15 @@ document.addEventListener('DOMContentLoaded', () => { // This is now checkout.js
         // Get selected delivery/pickup methods
         const pickupMethod = document.querySelector('input[name="pickup_method"]:checked')?.value;
         const returnMethod = document.querySelector('input[name="return_method"]:checked')?.value;
+        const scheduleDate = document.getElementById('schedule-date').value;
+        const scheduleTime = document.getElementById('schedule-time').value;
 
         const orderData = {
             items: cart.map(item => ({ service_id: item.service_id, quantity: item.quantity })),
             pickup_method: pickupMethod,
-            return_method: returnMethod
+            return_method: returnMethod,
+            schedule_date: scheduleDate,
+            schedule_time: scheduleTime
         };
 
         try {

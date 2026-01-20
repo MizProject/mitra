@@ -4,7 +4,7 @@
 
 -- Core table for all services offered by the business.
 -- This table stores common information for any type of service.
-CREATE TABLE services (
+CREATE TABLE IF NOT EXISTS services (
     service_id INTEGER PRIMARY KEY AUTOINCREMENT,
     service_name TEXT NOT NULL,
     -- The 'service_type' column is crucial. It tells the application
@@ -18,7 +18,7 @@ CREATE TABLE services (
 
 -- Details specific to hotel room services.
 -- This table has a one-to-one relationship with the 'services' table.
-CREATE TABLE service_details_hotel (
+CREATE TABLE IF NOT EXISTS service_details_hotel (
     service_id INTEGER PRIMARY KEY,
     room_capacity INTEGER NOT NULL,
     bed_type TEXT, -- e.g., 'King', 'Queen', 'Twin'
@@ -27,7 +27,7 @@ CREATE TABLE service_details_hotel (
 );
 
 -- Details specific to tech repair services.
-CREATE TABLE service_details_repair (
+CREATE TABLE IF NOT EXISTS service_details_repair (
     service_id INTEGER PRIMARY KEY,
     device_category TEXT, -- e.g., 'Smartphone', 'Laptop', 'Tablet',
     duration_minutes INTEGER,
@@ -36,7 +36,7 @@ CREATE TABLE service_details_repair (
 );
 
 -- Details specific to food items (for restaurants, cafes, etc.).
-CREATE TABLE service_details_food (
+CREATE TABLE IF NOT EXISTS service_details_food (
     service_id INTEGER PRIMARY KEY,
     food_category TEXT, -- e.g., 'Appetizer', 'Main Course', 'Dessert'
     dietary_info TEXT, -- e.g., 'Vegetarian', 'Gluten-Free', 'Spicy'
@@ -45,7 +45,7 @@ CREATE TABLE service_details_food (
 );
 
 -- Details specific to laundry services.
-CREATE TABLE service_details_laundry (
+CREATE TABLE IF NOT EXISTS service_details_laundry (
     service_id INTEGER PRIMARY KEY,
     -- Example: 'Standard', 'Express'. This is a property of the service.
     turnaround_type TEXT DEFAULT 'Standard',
@@ -55,19 +55,21 @@ CREATE TABLE service_details_laundry (
 );
 
 -- Main table for customer bookings/orders.
-CREATE TABLE bookings (
+CREATE TABLE IF NOT EXISTS bookings (
     booking_id INTEGER PRIMARY KEY AUTOINCREMENT,
     customer_id INTEGER,
     booking_date DATETIME DEFAULT CURRENT_TIMESTAMP,
     total_price REAL,
     pickup_method TEXT, -- e.g., 'service_pickup', 'customer_dropoff'
     return_method TEXT, -- e.g., 'service_delivery', 'customer_pickup'
+    schedule_date TEXT,
+    schedule_time TEXT,
     status TEXT NOT NULL DEFAULT 'Pending', -- e.g., 'Pending', 'Confirmed', 'In Progress', 'Completed', 'Cancelled'
     FOREIGN KEY (customer_id) REFERENCES customers (customer_id) ON DELETE SET NULL
 );
 
 -- Table for customer user accounts.
-CREATE TABLE customers (
+CREATE TABLE IF NOT EXISTS customers (
     customer_id INTEGER PRIMARY KEY AUTOINCREMENT,
     email TEXT NOT NULL UNIQUE,
     password_hash TEXT NOT NULL,
@@ -85,7 +87,7 @@ CREATE TABLE customers (
 );
 
 -- Table for administrator accounts.
-CREATE TABLE admin_login (
+CREATE TABLE IF NOT EXISTS admin_login (
     admin_id INTEGER PRIMARY KEY AUTOINCREMENT,
     username TEXT NOT NULL UNIQUE,
     password TEXT NOT NULL,
@@ -94,7 +96,7 @@ CREATE TABLE admin_login (
 );
 
 -- Table for global site configuration settings.
-CREATE TABLE page_config (
+CREATE TABLE IF NOT EXISTS page_config (
     config_id INTEGER PRIMARY KEY DEFAULT 1,
     page_name TEXT,
     primary_color TEXT,
@@ -106,7 +108,7 @@ CREATE TABLE page_config (
 );
 
 -- Table for promotional banners shown on the home page.
-CREATE TABLE promotion_banners (
+CREATE TABLE IF NOT EXISTS promotion_banners (
     banner_id INTEGER PRIMARY KEY AUTOINCREMENT,
     banner_name TEXT NOT NULL,
     image_url TEXT NOT NULL,
@@ -117,7 +119,7 @@ CREATE TABLE promotion_banners (
 );
 
 -- Links services to a specific booking. A single booking can have multiple items.
-CREATE TABLE booking_items (
+CREATE TABLE IF NOT EXISTS booking_items (
     booking_item_id INTEGER PRIMARY KEY AUTOINCREMENT,
     booking_id INTEGER NOT NULL,
     service_id INTEGER NOT NULL,
@@ -128,7 +130,7 @@ CREATE TABLE booking_items (
 );
 
 -- Manages availability for services that are time-based or have limited stock (e.g., hotel rooms, repair slots).
-CREATE TABLE service_availability (
+CREATE TABLE IF NOT EXISTS service_availability (
     availability_id INTEGER PRIMARY KEY AUTOINCREMENT,
     service_id INTEGER NOT NULL,
     start_time DATETIME NOT NULL,

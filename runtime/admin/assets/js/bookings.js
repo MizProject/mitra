@@ -2,6 +2,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const container = document.getElementById('bookings-table-container');
     let siteConfig = {};
 
+    // --- Socket.IO Connection ---
+    // Dynamically load the Socket.IO client script from the server
+    const script = document.createElement('script');
+    script.src = '/socket.io/socket.io.js';
+    script.onload = () => {
+        const socket = io();
+        socket.on('booking_update', () => loadAllBookings());
+    };
+    document.head.appendChild(script);
+
     async function loadConfigAndBookings() {
         await loadSiteConfig();
         await loadAllBookings();
@@ -41,6 +51,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <th>ID</th>
                     <th>Customer</th>
                     <th>Date</th>
+                    <th>Scheduled</th>
                     <th>Total</th>
                     <th>Status</th>
                     <th>Actions</th>
@@ -54,10 +65,11 @@ document.addEventListener('DOMContentLoaded', () => {
         bookings.forEach(booking => {
             const row = document.createElement('tr');
             row.innerHTML = `
+                <!-- <td class="is-clickable" data-booking-id="${booking.booking_id}">${booking.booking_id}</td> --!>
                 <td class="is-clickable" data-booking-id="${booking.booking_id}">${booking.booking_id}</td>
-                <td>${booking.booking_id}</td>
                 <td>${booking.first_name || ''} ${booking.last_name || ''} (${booking.email})</td>
                 <td>${new Date(booking.booking_date).toLocaleString()}</td>
+                <td>${booking.schedule_date || 'N/A'} ${booking.schedule_time ? '@ ' + booking.schedule_time : ''}</td>
                 <td>${currency}${booking.total_price.toFixed(2)}</td>
                 <td><span class="tag ${getStatusColor(booking.status)}">${booking.status}</span></td>
                 <td>
@@ -79,6 +91,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Add event listener for opening the details modal
         tbody.addEventListener('click', (event) => {
+            // Prevent modal if clicking on the status dropdown
+            if (event.target.closest('.status-changer') || event.target.closest('.select')) {
+                return;
+            }
+
             const row = event.target.closest('tr');
             if (row) {
                 const bookingId = row.querySelector('[data-booking-id]').dataset.bookingId;

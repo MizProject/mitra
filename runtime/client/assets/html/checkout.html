@@ -60,11 +60,11 @@
                         <div id="pickup-options-container" class="mb-4" style="display: none;">
                             <label class="label">How will we receive your items?</label>
                             <div class="control">
-                                <label class="radio">
+                                <label class="radio" style="display: block; margin-left: 0; margin-bottom: 0.5em;">
                                     <input type="radio" name="pickup_method" value="service_pickup" checked>
                                     Service will pick up
                                 </label>
-                                <label class="radio">
+                                <label class="radio" style="display: block; margin-left: 0;">
                                     <input type="radio" name="pickup_method" value="customer_dropoff">
                                     I will drop them off
                                 </label>
@@ -74,14 +74,28 @@
                         <div id="return-options-container" class="mb-4" style="display: none;">
                             <label class="label">How would you like to get your order back?</label>
                             <div class="control">
-                                <label class="radio">
+                                <label class="radio" style="display: block; margin-left: 0; margin-bottom: 0.5em;">
                                     <input type="radio" name="return_method" value="service_delivery" checked>
                                     Deliver to my address
                                 </label>
-                                <label class="radio">
+                                <label class="radio" style="display: block; margin-left: 0;">
                                     <input type="radio" name="return_method" value="customer_pickup">
                                     I will pick it up
                                 </label>
+                            </div>
+                        </div>
+
+                        <div class="field mb-4">
+                            <label class="label">Scheduled Date</label>
+                            <div class="control">
+                                <input class="input" type="date" id="schedule-date">
+                            </div>
+                        </div>
+
+                        <div class="field mb-4">
+                            <label class="label">Scheduled Time</label>
+                            <div class="control">
+                                <input class="input" type="time" id="schedule-time">
                             </div>
                         </div>
 

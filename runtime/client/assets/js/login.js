@@ -11,6 +11,11 @@ document.addEventListener('DOMContentLoaded', () => {
             tabs.forEach(item => item.classList.remove('is-active'));
             tabContent.forEach(content => content.style.display = 'none');
 
+            // Hide status messages when switching tabs
+            if (loginStatus) loginStatus.classList.add('is-hidden');
+            const registerStatus = document.getElementById('register-status');
+            if (registerStatus) registerStatus.classList.add('is-hidden');
+
             // Activate the clicked tab
             tab.classList.add('is-active');
             const target = tab.dataset.tab;
@@ -54,4 +59,49 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
+
+    // --- UI Enhancements ---
+    // Dynamically add branding and clean up navigation
+    (async () => {
+        try {
+            const response = await fetch('/api/get-site-config');
+            if (!response.ok) return;
+            const config = await response.json();
+
+            // 1. Inject Logo or Site Name at the top of the card
+            if (config.page_logo || config.page_name) {
+                const logoContainer = document.createElement('div');
+                logoContainer.className = 'has-text-centered mb-4';
+                
+                if (config.page_logo) {
+                    logoContainer.innerHTML = `<img src="${config.page_logo}" alt="${config.page_name || 'Logo'}" style="max-height: 80px;">`;
+                } else {
+                    logoContainer.innerHTML = `<h3 class="title is-4">${config.page_name}</h3>`;
+                }
+                
+                const cardContent = document.querySelector('.card-content');
+                const tabs = document.querySelector('.tabs');
+                const box = document.querySelector('.box');
+
+                if (cardContent) {
+                    cardContent.insertBefore(logoContainer, cardContent.firstChild);
+                } else if (tabs) {
+                    tabs.parentNode.insertBefore(logoContainer, tabs);
+                } else if (box) {
+                    box.parentNode.insertBefore(logoContainer, box);
+                }
+            }
+
+            // 2. Remove "Go back to main page" link
+            const links = document.querySelectorAll('a[href="/"]');
+            links.forEach(link => {
+                const text = link.textContent.toLowerCase();
+                if (text.includes('back') || text.includes('main page')) {
+                    link.style.display = 'none';
+                }
+            });
+        } catch (e) {
+            console.warn('Login UI enhancement failed:', e);
+        }
+    })();
 });

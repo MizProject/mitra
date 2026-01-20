@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mitra Troubleshooting</title>
+    <link rel="stylesheet" href="/assets/npm/bulma/css/bulma.min.css">
+    <link rel="stylesheet" href="/assets/npm/fontawesome-free/css/all.min.css">
+</head>
+<body>
+    <section class="section">
+        <div class="container">
+            <h1 class="title">Troubleshooting & Recovery</h1>
+            <p class="subtitle">Fix common database and configuration issues.</p>
+            
+            <div class="box">
+                <h2 class="title is-5">Database Schema</h2>
+                <p class="mb-3">If you are experiencing "Schema mismatch" errors (e.g., missing columns), run this fix.</p>
+                <button class="button is-primary" id="fix-schema-btn">
+                    <span class="icon"><i class="fas fa-database"></i></span>
+                    <span>Fix Database Schema</span>
+                </button>
+                <div id="schema-status" class="notification is-hidden mt-3"></div>
+            </div>
+
+            <div class="box">
+                <h2 class="title is-5">Schema Verification</h2>
+                <p class="mb-3">Compare your current database against the official installation file (.servicing_vischem.sql).</p>
+                <button class="button is-info" id="verify-schema-btn">
+                    <span class="icon"><i class="fas fa-check-circle"></i></span>
+                    <span>Verify Schema Integrity</span>
+                </button>
+                <div id="verification-status" class="notification is-hidden mt-3"></div>
+            </div>
+
+            <a href="/" class="button is-light">Back to Setup</a>
+        </div>
+    </section>
+
+    <script>
+        document.getElementById('fix-schema-btn').addEventListener('click', async (e) => {
+            const btn = e.target.closest('button');
+            const status = document.getElementById('schema-status');
+            
+            btn.classList.add('is-loading');
+            status.classList.add('is-hidden');
+            status.className = 'notification is-hidden mt-3'; // Reset classes
+
+            try {
+                const response = await fetch('/api/troubleshoot/fix-schema', { method: 'POST' });
+                const result = await response.json();
+
+                status.classList.remove('is-hidden');
+                if (response.ok) {
+                    status.classList.add('is-success');
+                    status.textContent = result.message;
+                } else {
+                    status.classList.add('is-danger');
+                    status.textContent = result.error || 'An error occurred.';
+                }
+            } catch (error) {
+                status.classList.remove('is-hidden');
+                status.classList.add('is-danger');
+                status.textContent = 'Network error: ' + error.message;
+            } finally {
+                btn.classList.remove('is-loading');
+            }
+        });
+
+        document.getElementById('verify-schema-btn').addEventListener('click', async (e) => {
+            const btn = e.target.closest('button');
+            const status = document.getElementById('verification-status');
+            
+            btn.classList.add('is-loading');
+            status.classList.add('is-hidden');
+            status.className = 'notification is-hidden mt-3';
+
+            try {
+                const response = await fetch('/api/troubleshoot/check-schema');
+                const result = await response.json();
+
+                status.classList.remove('is-hidden');
+                if (result.status === 'ok') {
+                    status.classList.add('is-success');
+                    status.textContent = "Database schema matches the definition file. All tables and columns are present.";
+                } else if (result.status === 'partial') {
+                    status.classList.add('is-success');
+                    status.innerHTML = "<strong>Core schema is valid.</strong><br>Some optional service tables are not present (this is normal if you haven't installed all service types).";
+                } else if (result.status === 'mismatch') {
+                    status.classList.add('is-warning');
+                    let msg = "<strong>Discrepancies found:</strong><br>";
+                    if (result.missingTables.length > 0) {
+                        msg += `Missing Core Tables: ${result.missingTables.join(', ')}<br>`;
+                    }
+                    if (Object.keys(result.missingColumns).length > 0) {
+                        msg += "Missing Columns:<br>";
+                        for (const [table, cols] of Object.entries(result.missingColumns)) {
+                            msg += `- ${table}: ${cols.join(', ')}<br>`;
+                        }
+                    }
+                    status.innerHTML = msg;
+                } else {
+                    status.classList.add('is-danger');
+                    status.textContent = result.error || "An unknown error occurred.";
+                }
+            } catch (error) {
+                status.classList.remove('is-hidden');
+                status.classList.add('is-danger');
+                status.textContent = 'Network error: ' + error.message;
+            } finally {
+                btn.classList.remove('is-loading');
+            }
+        });
+    </script>
+</body>
+</html>

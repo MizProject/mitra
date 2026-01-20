@@ -143,7 +143,7 @@ async function generateClientReceiptCanvas(booking, canvasId) {
     const items = JSON.parse(booking.items || '[]');
     
     // Calculate dynamic height
-    let calculatedHeight = 250 + (items.length * lineSpacing) + 250;
+    let calculatedHeight = 275 + (items.length * lineSpacing) + 250;
     items.forEach(item => {
         const text = `${item.quantity}x ${item.service_name}`;
         const lines = wrapReceiptText(ctx, text, width - (padding * 2) - 80);
@@ -181,6 +181,12 @@ async function generateClientReceiptCanvas(booking, canvasId) {
     if (booking.first_name || booking.last_name) {
         ctx.font = '14px sans-serif';
         ctx.fillText(`For: ${booking.first_name || ''} ${booking.last_name || ''}`.trim(), width / 2, currentY);
+        currentY += lineSpacing;
+    }
+
+    if (booking.schedule_date) {
+        ctx.font = '14px sans-serif';
+        ctx.fillText(`Scheduled: ${booking.schedule_date}`, width / 2, currentY);
         currentY += lineSpacing;
     }
 

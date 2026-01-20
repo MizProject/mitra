@@ -25,13 +25,16 @@ document.addEventListener('DOMContentLoaded', () => {
                     throw new Error(result.error || 'Registration failed.');
                 }
 
-                // On success, show a success message and maybe switch to the login tab
-                registerStatus.className = 'notification is-success';
-                registerStatus.textContent = 'Registration successful! Please log in.';
-                
-                // Optional: Automatically switch to login tab after successful registration
+                // On success, switch to the login tab
                 document.querySelector('[data-tab="login-tab"]').click();
 
+                // Show success message on login tab
+                const loginStatus = document.getElementById('login-status');
+                if (loginStatus) {
+                    loginStatus.className = 'notification is-success';
+                    loginStatus.textContent = 'Registration successful! Please log in.';
+                    loginStatus.classList.remove('is-hidden');
+                }
             } catch (error) {
                 registerStatus.className = 'notification is-danger';
                 registerStatus.textContent = error.message;
