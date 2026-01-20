@@ -1,4 +1,5 @@
 // Runtime JS for Mitra, a business booking application
+// License: MIT
 
 console.log("Starting Mitra Runtime...");
 console.log("Initializing Core Dependencies...");
@@ -13,6 +14,8 @@ const http = require('http');
 const { Server } = require("socket.io");
 const bcrypt = require('bcrypt');
 const session = require('express-session');
+const cookieParser = require('cookie-parser');
+const SQLiteStore = require('connect-sqlite3')(session);
 const multer = require('multer');
 const { addressBook } = require('fontawesome');
 
@@ -55,8 +58,13 @@ debugLogWriteToFile("Core dependencies loaded.");
 app.use(express.json()); // Modern replacement for body-parser
 debugLogWriteToFile("Body-parser JSON middleware enabled.");
 
+app.use(cookieParser());
+
 // --- Session Persistence ---
 // Load or generate a persistent session secret to keep users logged in across server restarts.
+const dataDir = path.join(__dirname, 'runtime', 'data');
+mkdirp.sync(dataDir);
+
 const secretFilePath = path.join(__dirname, 'runtime', 'data', 'session_secret.txt');
 let sessionSecret;
 if (fs.existsSync(secretFilePath)) {
@@ -71,6 +79,10 @@ if (fs.existsSync(secretFilePath)) {
 }
 // Session middleware
 app.use(session({
+    store: new SQLiteStore({
+        db: 'sessions.sqlite',
+        dir: dataDir
+    }),
     secret: sessionSecret, // Use the persistent secret
     resave: false,
     saveUninitialized: true,
@@ -453,10 +465,19 @@ app.put('/api/admin/services/:id', upload.single('image'), (req, res) => {
     if (!req.session || !req.session.adminId) return res.status(401).json({ error: "Administrator not authenticated." });
 
     const { id } = req.params;
-    const { service_name, service_type, description, base_price, is_active } = req.body;
+    const { service_name, service_type, description, base_price, is_active, remove_image } = req.body;
 
     if (!service_name || !service_type) {
         return res.status(400).json({ error: "Service Name and Service Type are required." });
+    }
+
+    // Handle image deletion if replacing or removing
+    if (req.file || remove_image === 'true') {
+        db.get('SELECT image_url FROM services WHERE service_id = ?', [id], (err, row) => {
+            if (row && row.image_url && !row.image_url.includes('placeholder')) {
+                try { fs.unlinkSync(path.join(__dirname, row.image_url)); } catch(e) {}
+            }
+        });
     }
 
     let sql = 'UPDATE services SET service_name = ?, service_type = ?, description = ?, base_price = ?, is_active = ?';
@@ -465,6 +486,9 @@ app.put('/api/admin/services/:id', upload.single('image'), (req, res) => {
     if (req.file) {
         sql += ', image_url = ?';
         params.push(`/runtime/data/images/${req.file.filename}`);
+    } else if (remove_image === 'true') {
+        sql += ', image_url = ?';
+        params.push('/assets/runtime/data/images/s/placeholder.png');
     }
 
     sql += ' WHERE service_id = ?';
@@ -795,26 +819,37 @@ app.post('/api/admin/site-config', upload.fields([{ name: 'logo', maxCount: 1 },
         return res.status(401).json({ error: "Administrator not authenticated." });
     }
 
-    const { siteName, primaryColor, secondaryColor, currencySymbol } = req.body;
+    const { siteName, primaryColor, secondaryColor, currencySymbol, remove_logo, remove_banner } = req.body;
     const logoFile = req.files['logo'] ? req.files['logo'][0] : null;
     const bannerFile = req.files['banner'] ? req.files['banner'][0] : null;
 
     const logoPath = logoFile ? `/runtime/data/images/${logoFile.filename}` : null;
     const bannerPath = bannerFile ? `/runtime/data/images/${bannerFile.filename}` : null;
 
-    // Using COALESCE to only update fields that are provided.
-    const sql = `
-        UPDATE page_config SET
-            page_name = COALESCE(?, page_name),
-            primary_color = COALESCE(?, primary_color),
-            secondary_color = COALESCE(?, secondary_color),
-            currency_symbol = COALESCE(?, currency_symbol),
-            page_logo = COALESCE(?, page_logo),
-            banner_image = COALESCE(?, banner_image)
-        WHERE config_id = 1;
-    `;
+    // Handle file deletion
+    db.get('SELECT page_logo, banner_image FROM page_config WHERE config_id = 1', [], (err, row) => {
+        if (row) {
+            if ((logoFile || remove_logo === 'true') && row.page_logo) {
+                try { fs.unlinkSync(path.join(__dirname, row.page_logo)); } catch(e) {}
+            }
+            if ((bannerFile || remove_banner === 'true') && row.banner_image) {
+                try { fs.unlinkSync(path.join(__dirname, row.banner_image)); } catch(e) {}
+            }
+        }
+    });
 
-    db.run(sql, [siteName, primaryColor, secondaryColor, currencySymbol, logoPath, bannerPath], function(err) {
+    let sql = `UPDATE page_config SET page_name = ?, primary_color = ?, secondary_color = ?, currency_symbol = ?`;
+    const params = [siteName, primaryColor, secondaryColor, currencySymbol];
+
+    if (logoFile) { sql += `, page_logo = ?`; params.push(logoPath); }
+    else if (remove_logo === 'true') { sql += `, page_logo = NULL`; }
+
+    if (bannerFile) { sql += `, banner_image = ?`; params.push(bannerPath); }
+    else if (remove_banner === 'true') { sql += `, banner_image = NULL`; }
+
+    sql += ` WHERE config_id = 1`;
+
+    db.run(sql, params, function(err) {
         if (err) return res.status(500).json({ error: "Failed to update site configuration." });
         res.json({ message: "Site configuration updated successfully." });
     });

@@ -8,6 +8,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let currentPrimaryColor = '#00d1b2';
     let currentSecondaryColor = '#4a4a4a';
+    let removeLogoFlag = false;
+    let removeBannerFlag = false;
 
     // --- Load Initial Config ---
     async function loadInitialConfig() {
@@ -24,6 +26,36 @@ document.addEventListener('DOMContentLoaded', () => {
             // Initialize color pickers with loaded values
             setupColorPicker('primary', currentPrimaryColor);
             setupColorPicker('secondary', currentSecondaryColor);
+
+            // Inject Remove Buttons if images exist
+            if (config.page_logo) {
+                const container = document.createElement('div');
+                container.className = 'mt-2 mb-4';
+                container.innerHTML = `
+                    <p class="is-size-7 mb-1">Current Logo:</p>
+                    <div class="is-flex is-align-items-center">
+                        <img src="${config.page_logo}" style="max-height: 40px; margin-right: 10px;">
+                        <button type="button" class="button is-small is-danger is-outlined" id="remove-logo-btn">Remove</button>
+                    </div>`;
+                logoInput.parentNode.parentNode.appendChild(container);
+                document.getElementById('remove-logo-btn').addEventListener('click', (e) => {
+                    removeLogoFlag = true; e.target.closest('div').parentNode.remove();
+                });
+            }
+            if (config.banner_image) {
+                const container = document.createElement('div');
+                container.className = 'mt-2 mb-4';
+                container.innerHTML = `
+                    <p class="is-size-7 mb-1">Current Banner:</p>
+                    <div class="is-flex is-align-items-center">
+                        <img src="${config.banner_image}" style="max-height: 60px; margin-right: 10px;">
+                        <button type="button" class="button is-small is-danger is-outlined" id="remove-banner-btn">Remove</button>
+                    </div>`;
+                bannerInput.parentNode.parentNode.appendChild(container);
+                document.getElementById('remove-banner-btn').addEventListener('click', (e) => {
+                    removeBannerFlag = true; e.target.closest('div').parentNode.remove();
+                });
+            }
 
         } catch (error) {
             showStatus(error.message, 'is-danger');
@@ -86,6 +118,8 @@ document.addEventListener('DOMContentLoaded', () => {
         formData.append('currencySymbol', currencySymbolInput.value);
         formData.append('primaryColor', currentPrimaryColor);
         formData.append('secondaryColor', currentSecondaryColor);
+        formData.append('remove_logo', removeLogoFlag);
+        formData.append('remove_banner', removeBannerFlag);
 
         if (logoInput.files[0]) {
             formData.append('logo', logoInput.files[0]);

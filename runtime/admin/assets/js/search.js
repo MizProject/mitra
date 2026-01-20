@@ -54,6 +54,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <th>ID</th>
                     <th>Customer</th>
                     <th>Date</th>
+                    <th>Scheduled</th>
                     <th>Total</th>
                     <th>Status</th>
                 </tr>
@@ -71,6 +72,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <td>${booking.booking_id}</td>
                 <td>${booking.first_name || ''} ${booking.last_name || ''} (${booking.email})</td>
                 <td>${new Date(booking.booking_date).toLocaleString()}</td>
+                <td>${booking.schedule_date || 'N/A'} ${booking.schedule_time ? '@ ' + booking.schedule_time : ''}</td>
                 <td>${currency}${booking.total_price.toFixed(2)}</td>
                 <td><span class="tag ${getStatusColor(booking.status)}">${booking.status}</span></td>
             `;

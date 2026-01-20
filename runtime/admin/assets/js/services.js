@@ -6,6 +6,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let cropperImageElement; // Cropper.js v2 <cropper-image> instance
     let cropperSelectionElement; // Cropper.js v2 <cropper-selection> instance
     let croppedImageBlob = null; // To store the cropped image blob
+    let removeImageFlag = false;
 
     async function loadServices() {
         try {
@@ -70,6 +71,13 @@ document.addEventListener('DOMContentLoaded', () => {
                         <div class="field"><label class="label">Description</label><div class="control"><textarea class="textarea" id="modal-service-description">${service ? service.description : ''}</textarea></div><p class="help">A brief description of the service.</p></div>
                         <div class="field"><label class="label">Base Price</label><div class="control"><input class="input" type="number" step="0.01" id="modal-service-price" value="${service ? service.base_price : '0.00'}"></div></div>
                         <div class="field"><label class="label">Image</label><div class="control"><input class="input" type="file" id="modal-service-image" accept="image/*"></div><p class="help">${service ? 'Leave empty to keep the current image.' : 'An image is required.'}</p></div>
+                        <div id="current-image-container" class="field ${service && service.image_url && !service.image_url.includes('placeholder') ? '' : 'is-hidden'}">
+                            <label class="label is-small">Current Image</label>
+                            <div class="is-flex is-align-items-center">
+                                <img src="${service ? service.image_url : ''}" style="max-height: 50px; margin-right: 10px;" id="current-service-image-preview">
+                                <button type="button" class="button is-small is-danger is-outlined" id="remove-service-image-btn">Remove Image</button>
+                            </div>
+                        </div>
                         <div class="field"><label class="checkbox"><input type="checkbox" id="modal-service-active" ${service ? (service.is_active ? 'checked' : '') : 'checked'}> Active</label></div>
                     </form>
                     <div class="notification is-hidden mt-4" id="modal-form-status"></div>
@@ -127,6 +135,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Reset the blob on modal open
         croppedImageBlob = null; // Clear any previously cropped image
+        removeImageFlag = false;
 
         // --- Image Cropping Logic ---
         modalServiceImageInput.addEventListener('change', (event) => {
@@ -180,6 +189,13 @@ document.addEventListener('DOMContentLoaded', () => {
         cropperModal.querySelector('.modal-background').addEventListener('click', closeCropperModal);
         cropperModal.querySelector('#cancel-crop-button').addEventListener('click', closeCropperModal);
 
+        // Remove Image Button Logic
+        const removeImageBtn = modal.querySelector('#remove-service-image-btn');
+        removeImageBtn.addEventListener('click', () => {
+            removeImageFlag = true;
+            modal.querySelector('#current-image-container').classList.add('is-hidden');
+        });
+
         modal.querySelector('#submit-modal-form').addEventListener('click', async () => {
             const statusBox = modal.querySelector('#modal-form-status');
             const submitButton = modal.querySelector('#submit-modal-form');
@@ -196,6 +212,7 @@ document.addEventListener('DOMContentLoaded', () => {
             formData.append('description', modal.querySelector('#modal-service-description').value);
             formData.append('base_price', modal.querySelector('#modal-service-price').value);
             formData.append('is_active', modal.querySelector('#modal-service-active').checked);
+            formData.append('remove_image', removeImageFlag);
 
             if (croppedImageBlob) {
                 formData.append('image', croppedImageBlob, 'cropped_image.jpg'); // Use a generic filename
