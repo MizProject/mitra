@@ -80,6 +80,13 @@ function applyThemeColor(color, type) {
         document.documentElement.style.setProperty('--bulma-primary-s', `${hsl.s}%`);
         document.documentElement.style.setProperty('--bulma-primary-l', `${hsl.l}%`);
         document.documentElement.style.setProperty('--bulma-primary', color);
+        document.documentElement.style.setProperty('--bulma-primary-invert', inverse);
+        
+        // Optional: Map link color to primary for consistency across the site
+        document.documentElement.style.setProperty('--bulma-link-h', `${hsl.h}deg`);
+        document.documentElement.style.setProperty('--bulma-link-s', `${hsl.s}%`);
+        document.documentElement.style.setProperty('--bulma-link-l', `${hsl.l}%`);
+        document.documentElement.style.setProperty('--bulma-link', color);
     }
 
     const styleId = `mitra-theme-styles-${type}`;
@@ -88,23 +95,6 @@ function applyThemeColor(color, type) {
     const style = document.createElement('style');
     style.id = styleId;
     style.textContent = `
-        .button.is-${type}, .tag.is-${type}, .notification.is-${type}, .file-cta, .hero.is-${type} {
-            background-color: var(--${type}-color) !important;
-            color: var(--${type}-inverse-color) !important;
-            border-color: transparent !important;
-        }
-        .button.is-${type}:hover, .file-cta:hover {
-            filter: brightness(0.95);
-        }
-        .button.is-${type}.is-outlined {
-            background-color: transparent !important;
-            border-color: var(--${type}-color) !important;
-            color: var(--${type}-color) !important;
-        }
-        .button.is-${type}.is-outlined:hover {
-            background-color: var(--${type}-color) !important;
-            color: var(--${type}-inverse-color) !important;
-        }
         .has-text-${type} {
             color: var(--${type}-color) !important;
         }
