@@ -2,3 +2,4 @@ runtime/data/logs/*.log
 development/logs/*.log
 node_modules_old
 node_modules
+runtime/data/sessions.sqlite
