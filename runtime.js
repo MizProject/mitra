@@ -530,7 +530,7 @@ app.get('/api/admin/search-bookings', (req, res) => {
         return res.status(401).json({ error: "Administrator not authenticated." });
     }
 
-    const { bookingId, name, email, status, startDate, endDate } = req.query;
+    const { bookingId, name, email, status, startDate, endDate, scheduleDate, sortBy, sortOrder } = req.query;
 
     let sql = `
         SELECT
@@ -569,8 +569,20 @@ app.get('/api/admin/search-bookings', (req, res) => {
         sql += ' AND b.booking_date < ?';
         params.push(nextDay.toISOString().split('T')[0]);
     }
+    if (scheduleDate) {
+        sql += ' AND b.schedule_date = ?';
+        params.push(scheduleDate);
+    }
 
-    sql += ' ORDER BY b.booking_date DESC';
+    // Sorting logic
+    const allowedSortColumns = ['booking_date', 'schedule_date', 'status', 'total_price'];
+    const sortColumn = allowedSortColumns.includes(sortBy) ? sortBy : 'booking_date';
+    const order = (sortOrder && sortOrder.toUpperCase() === 'ASC') ? 'ASC' : 'DESC';
+
+    sql += ` ORDER BY b.${sortColumn} ${order}`;
+    if (sortColumn === 'schedule_date') {
+        sql += `, b.schedule_time ${order}`;
+    }
 
     db.all(sql, params, (err, rows) => {
         if (err) return res.status(500).json({ error: "Database search failed." });

@@ -52,6 +52,76 @@
             <section class="section">
                 <div class="container">
                     <h1 class="title">All Customer Bookings</h1>
+                    <div class="box">
+                        <div class="columns is-multiline is-vcentered">
+                            <div class="column is-narrow">
+                                <div class="field">
+                                    <label class="label">Sort By</label>
+                                    <div class="control">
+                                        <div class="select">
+                                            <select id="sort-by">
+                                                <option value="booking_date">Booking Date</option>
+                                                <option value="schedule_date">Schedule Date</option>
+                                                <option value="status">Status</option>
+                                                <option value="total_price">Total Price</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="column is-narrow">
+                                <div class="field">
+                                    <label class="label">Order</label>
+                                    <div class="control">
+                                        <div class="select">
+                                            <select id="sort-order">
+                                                <option value="DESC">Descending</option>
+                                                <option value="ASC">Ascending</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="column is-narrow">
+                                <div class="field">
+                                    <label class="label">Status</label>
+                                    <div class="control">
+                                        <div class="select">
+                                            <select id="filter-status">
+                                                <option value="">All Statuses</option>
+                                                <option value="Pending">Pending</option>
+                                                <option value="Processing">Processing</option>
+                                                <option value="Completed">Completed</option>
+                                                <option value="Canceled">Canceled</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="column is-narrow">
+                                <div class="field">
+                                    <label class="label">Schedule Date</label>
+                                    <div class="control">
+                                        <input class="input" type="date" id="filter-schedule-date">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="column">
+                                <div class="field">
+                                    <label class="label">&nbsp;</label>
+                                    <div class="control">
+                                        <button class="button is-primary" id="apply-filters">
+                                            <span class="icon"><i class="fas fa-filter"></i></span>
+                                            <span>Apply</span>
+                                        </button>
+                                        <button class="button is-light" id="clear-filters">
+                                            <span>Reset</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                     <div class="table-container" id="bookings-table-container">
                         <progress class="progress is-large is-primary" max="100">Loading...</progress>
                     </div>

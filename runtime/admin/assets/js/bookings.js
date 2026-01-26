@@ -1,5 +1,11 @@
 document.addEventListener('DOMContentLoaded', () => {
     const container = document.getElementById('bookings-table-container');
+    const sortBySelect = document.getElementById('sort-by');
+    const sortOrderSelect = document.getElementById('sort-order');
+    const statusSelect = document.getElementById('filter-status');
+    const scheduleDateInput = document.getElementById('filter-schedule-date');
+    const applyButton = document.getElementById('apply-filters');
+    const clearButton = document.getElementById('clear-filters');
     let siteConfig = {};
 
     // --- Socket.IO Connection ---
@@ -8,13 +14,13 @@ document.addEventListener('DOMContentLoaded', () => {
     script.src = '/socket.io/socket.io.js';
     script.onload = () => {
         const socket = io();
-        socket.on('booking_update', () => loadAllBookings());
+        socket.on('booking_update', () => fetchBookings());
     };
     document.head.appendChild(script);
 
     async function loadConfigAndBookings() {
         await loadSiteConfig();
-        await loadAllBookings();
+        await fetchBookings();
     }
 
     async function loadSiteConfig() {
@@ -26,9 +32,15 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    async function loadAllBookings() {
+    async function fetchBookings() {
+        const params = new URLSearchParams();
+        if (sortBySelect && sortBySelect.value) params.append('sortBy', sortBySelect.value);
+        if (sortOrderSelect && sortOrderSelect.value) params.append('sortOrder', sortOrderSelect.value);
+        if (statusSelect && statusSelect.value) params.append('status', statusSelect.value);
+        if (scheduleDateInput && scheduleDateInput.value) params.append('scheduleDate', scheduleDateInput.value);
+
         try {
-            const response = await fetch('/api/admin/bookings');
+            const response = await fetch(`/api/admin/search-bookings?${params.toString()}`);
             const bookings = await response.json();
             renderBookingsTable(bookings);
         } catch (error) {
@@ -39,7 +51,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderBookingsTable(bookings) {
         const currency = siteConfig.currency_symbol || '$';
         if (bookings.length === 0) {
-            container.innerHTML = '<p>No bookings have been made yet.</p>';
+            container.innerHTML = '<div class="notification is-info">No bookings found matching your criteria.</div>';
             return;
         }
 
@@ -99,7 +111,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const row = event.target.closest('tr');
             if (row) {
                 const bookingId = row.querySelector('[data-booking-id]').dataset.bookingId;
-                fetchAndShowBookingDetails(bookingId, loadAllBookings); // Reload data when modal closes
+                fetchAndShowBookingDetails(bookingId, fetchBookings); // Reload data when modal closes
             }
         });
 
@@ -117,7 +129,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     });
                     if (!response.ok) throw new Error('Failed to update status.');
                     // Refresh the data to show changes
-                    loadAllBookings();
+                    fetchBookings();
                 } catch (error) {
                     alert('Error updating status: ' + error.message);
                 }
@@ -134,6 +146,16 @@ document.addEventListener('DOMContentLoaded', () => {
             default: return 'is-light';
         }
     }
+
+    if (applyButton) applyButton.addEventListener('click', fetchBookings);
+    
+    if (clearButton) clearButton.addEventListener('click', () => {
+        if (sortBySelect) sortBySelect.value = 'booking_date';
+        if (sortOrderSelect) sortOrderSelect.value = 'DESC';
+        if (statusSelect) statusSelect.value = '';
+        if (scheduleDateInput) scheduleDateInput.value = '';
+        fetchBookings();
+    });
 
     loadConfigAndBookings();
 });
