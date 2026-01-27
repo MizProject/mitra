@@ -8,6 +8,61 @@ document.addEventListener('DOMContentLoaded', () => {
     const clearButton = document.getElementById('clear-filters');
     let siteConfig = {};
 
+    // --- Confirmation Modal Logic ---
+    const confirmationModal = document.getElementById('status-confirmation-modal');
+    const confirmStatusBtn = document.getElementById('confirm-status-change-btn');
+    const cancelStatusBtn = document.getElementById('cancel-status-change-btn');
+    let pendingChange = null;
+
+    function closeConfirmationModal() {
+        if (confirmationModal) confirmationModal.classList.remove('is-active');
+        if (pendingChange) {
+            // Revert the select to its previous value if cancelled
+            pendingChange.selectElement.value = pendingChange.previousStatus;
+            pendingChange = null;
+        }
+    }
+
+    if (confirmationModal) {
+        confirmationModal.querySelectorAll('.delete, .modal-background').forEach(el => {
+            el.addEventListener('click', closeConfirmationModal);
+        });
+    }
+
+    if (cancelStatusBtn) {
+        cancelStatusBtn.addEventListener('click', closeConfirmationModal);
+    }
+
+    if (confirmStatusBtn) {
+        confirmStatusBtn.addEventListener('click', async () => {
+            if (!pendingChange) return;
+            
+            const { bookingId, newStatus, selectElement, previousStatus } = pendingChange;
+            confirmStatusBtn.classList.add('is-loading');
+
+            try {
+                const response = await fetch(`/api/admin/bookings/${bookingId}/status`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status: newStatus })
+                });
+                if (!response.ok) throw new Error('Failed to update status.');
+                
+                // Success: Clear pendingChange so closeConfirmationModal doesn't revert
+                pendingChange = null; 
+                confirmationModal.classList.remove('is-active');
+                fetchBookings();
+            } catch (error) {
+                alert('Error updating status: ' + error.message);
+                selectElement.value = previousStatus;
+                pendingChange = null;
+                confirmationModal.classList.remove('is-active');
+            } finally {
+                confirmStatusBtn.classList.remove('is-loading');
+            }
+        });
+    }
+
     // --- Socket.IO Connection ---
     // Dynamically load the Socket.IO client script from the server
     const script = document.createElement('script');
@@ -86,7 +141,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 <td><span class="tag ${getStatusColor(booking.status)}">${booking.status}</span></td>
                 <td>
                     <div class="select is-small">
-                        <select data-booking-id="${booking.booking_id}" class="status-changer">
+                        <select data-booking-id="${booking.booking_id}" 
+                                class="status-changer" 
+                                data-previous-value="${booking.status}"
+                                data-customer-name="${booking.first_name || ''} ${booking.last_name || ''}"
+                                data-booking-date="${new Date(booking.booking_date).toLocaleString()}"
+                                data-booking-total="${currency}${booking.total_price.toFixed(2)}">
                             <option value="Pending" ${booking.status === 'Pending' ? 'selected' : ''}>Pending</option>
                             <option value="Processing" ${booking.status === 'Processing' ? 'selected' : ''}>Processing</option>
                             <option value="Completed" ${booking.status === 'Completed' ? 'selected' : ''}>Completed</option>
@@ -117,21 +177,36 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Add event listeners for status changes
         container.querySelectorAll('.status-changer').forEach(select => {
-            select.addEventListener('change', async (event) => {
+            select.addEventListener('change', (event) => {
                 const bookingId = event.target.dataset.bookingId;
                 const newStatus = event.target.value;
+                const previousStatus = event.target.dataset.previousValue;
+                const customerName = event.target.dataset.customerName;
+                const bookingDate = event.target.dataset.bookingDate;
+                const bookingTotal = event.target.dataset.bookingTotal;
                 
-                try {
-                    const response = await fetch(`/api/admin/bookings/${bookingId}/status`, {
-                        method: 'PUT',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ status: newStatus })
-                    });
-                    if (!response.ok) throw new Error('Failed to update status.');
-                    // Refresh the data to show changes
-                    fetchBookings();
-                } catch (error) {
-                    alert('Error updating status: ' + error.message);
+                pendingChange = {
+                    selectElement: event.target,
+                    bookingId: bookingId,
+                    newStatus: newStatus,
+                    previousStatus: previousStatus
+                };
+
+                if (confirmationModal) {
+                    document.getElementById('confirm-booking-id').textContent = bookingId;
+                    document.getElementById('confirm-new-status').textContent = newStatus;
+                    
+                    // Update additional info fields if they exist
+                    if(document.getElementById('confirm-customer-name')) document.getElementById('confirm-customer-name').textContent = customerName;
+                    if(document.getElementById('confirm-booking-date')) document.getElementById('confirm-booking-date').textContent = bookingDate;
+                    if(document.getElementById('confirm-booking-total')) document.getElementById('confirm-booking-total').textContent = bookingTotal;
+
+                    confirmationModal.classList.add('is-active');
+                } else if (confirm(`Are you sure you want to change the status of Booking #${bookingId} to ${newStatus}?`)) {
+                    // Fallback if modal is missing
+                    confirmStatusBtn.click();
+                } else {
+                    event.target.value = previousStatus;
                 }
             });
         });

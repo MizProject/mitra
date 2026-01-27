@@ -129,6 +129,35 @@
             </section>
         </div>
     </div>
+
+    <!-- Status Confirmation Modal -->
+    <div class="modal" id="status-confirmation-modal">
+        <div class="modal-background"></div>
+        <div class="modal-card">
+            <header class="modal-card-head">
+                <p class="modal-card-title">Confirm Status Change</p>
+                <button class="delete" aria-label="close"></button>
+            </header>
+            <section class="modal-card-body">
+                <div class="content">
+                    <p>Please confirm the status update for the following booking:</p>
+                    <table class="table is-fullwidth is-striped is-bordered">
+                        <tbody>
+                            <tr><th>Booking ID</th><td id="confirm-booking-id"></td></tr>
+                            <tr><th>Customer</th><td id="confirm-customer-name"></td></tr>
+                            <tr><th>Date</th><td id="confirm-booking-date"></td></tr>
+                            <tr><th>Total</th><td id="confirm-booking-total"></td></tr>
+                            <tr><th>New Status</th><td id="confirm-new-status" class="has-text-weight-bold has-text-primary"></td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+            <footer class="modal-card-foot">
+                <button class="button is-primary" id="confirm-status-change-btn">Confirm Change</button>
+                <button class="button" id="cancel-status-change-btn">Cancel</button>
+            </footer>
+        </div>
+    </div>
 </body>
 <script src="/assets/runtime/admin/assets/js/session.js"></script>
 <script src="/assets/runtime/client/assets/js/theme_config.js"></script>
