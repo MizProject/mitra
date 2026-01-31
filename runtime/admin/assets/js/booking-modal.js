@@ -74,13 +74,13 @@ async function showBookingDetailsModal(booking, onCloseCallback) {
                 <div class="tabs is-boxed">
                     <ul>
                         <li class="is-active" data-tab="info-tab"><a><span class="icon is-small"><i class="fas fa-info-circle"></i></span><span>General Info</span></a></li>
-                        <li data-tab="action-tab"><a><span class="icon is-small"><i class="fas fa-cogs"></i></span><span>Action</span></a></li>
+                        <!-- <li data-tab="action-tab"><a><span class="icon is-small"><i class="fas fa-cogs"></i></span><span>Action</span></a></li> -->
                         <li data-tab="generate-tab"><a><span class="icon is-small"><i class="fas fa-receipt"></i></span><span>Generate</span></a></li>
                     </ul>
                 </div>
                 <div class="content">
                     <div id="info-tab" class="content-tab"></div>
-                    <div id="action-tab" class="content-tab" style="display: none;"></div>
+                    <div id="action-tab" class="content-tab" style="display: none;"></div> 
                     <div id="generate-tab" class="content-tab" style="display: none;"></div>
                 </div>
             </section>

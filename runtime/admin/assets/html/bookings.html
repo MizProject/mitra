@@ -159,6 +159,42 @@
             </footer>
         </div>
     </div>
+
+    <!-- Admin Auth Modal for Finalized Bookings -->
+    <div class="modal" id="status-auth-modal">
+        <div class="modal-background"></div>
+        <div class="modal-card">
+            <header class="modal-card-head">
+                <p class="modal-card-title">Authorization Required</p>
+                <button class="delete" aria-label="close"></button>
+            </header>
+            <section class="modal-card-body">
+                <div class="notification is-warning">
+                    <span class="icon"><i class="fas fa-lock"></i></span>
+                    <span>This booking is finalized. Admin credentials are required to change its status.</span>
+                </div>
+                <div class="field">
+                    <label class="label">Username</label>
+                    <div class="control has-icons-left">
+                        <input class="input" type="text" id="auth-username" placeholder="Admin Username">
+                        <span class="icon is-small is-left"><i class="fas fa-user"></i></span>
+                    </div>
+                </div>
+                <div class="field">
+                    <label class="label">Password</label>
+                    <div class="control has-icons-left">
+                        <input class="input" type="password" id="auth-password" placeholder="Password">
+                        <span class="icon is-small is-left"><i class="fas fa-lock"></i></span>
+                    </div>
+                </div>
+                <p class="help is-danger is-hidden" id="auth-error-message"></p>
+            </section>
+            <footer class="modal-card-foot">
+                <button class="button is-primary" id="confirm-auth-btn">Verify & Change</button>
+                <button class="button" id="cancel-auth-btn">Cancel</button>
+            </footer>
+        </div>
+    </div>
 </body>
 <script src="/assets/runtime/admin/assets/js/session.js"></script>
 <script src="/assets/runtime/client/assets/js/theme_config.js"></script>

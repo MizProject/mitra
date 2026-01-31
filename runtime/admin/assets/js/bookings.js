@@ -14,10 +14,31 @@ document.addEventListener('DOMContentLoaded', () => {
     const cancelStatusBtn = document.getElementById('cancel-status-change-btn');
     let pendingChange = null;
 
+    // --- Auth Modal Logic (for finalized bookings) ---
+    const authModal = document.getElementById('status-auth-modal');
+    const confirmAuthBtn = document.getElementById('confirm-auth-btn');
+    const cancelAuthBtn = document.getElementById('cancel-auth-btn');
+    const authUsernameInput = document.getElementById('auth-username');
+    const authPasswordInput = document.getElementById('auth-password');
+    const authErrorMsg = document.getElementById('auth-error-message');
+
     function closeConfirmationModal() {
         if (confirmationModal) confirmationModal.classList.remove('is-active');
         if (pendingChange) {
             // Revert the select to its previous value if cancelled
+            pendingChange.selectElement.value = pendingChange.previousStatus;
+            pendingChange = null;
+        }
+    }
+
+    function closeAuthModal() {
+        if (authModal) {
+            authModal.classList.remove('is-active');
+            authUsernameInput.value = '';
+            authPasswordInput.value = '';
+            authErrorMsg.classList.add('is-hidden');
+        }
+        if (pendingChange) {
             pendingChange.selectElement.value = pendingChange.previousStatus;
             pendingChange = null;
         }
@@ -32,6 +53,13 @@ document.addEventListener('DOMContentLoaded', () => {
     if (cancelStatusBtn) {
         cancelStatusBtn.addEventListener('click', closeConfirmationModal);
     }
+
+    if (authModal) {
+        authModal.querySelectorAll('.delete, .modal-background').forEach(el => {
+            el.addEventListener('click', closeAuthModal);
+        });
+    }
+    if (cancelAuthBtn) cancelAuthBtn.addEventListener('click', closeAuthModal);
 
     if (confirmStatusBtn) {
         confirmStatusBtn.addEventListener('click', async () => {
@@ -59,6 +87,59 @@ document.addEventListener('DOMContentLoaded', () => {
                 confirmationModal.classList.remove('is-active');
             } finally {
                 confirmStatusBtn.classList.remove('is-loading');
+            }
+        });
+    }
+
+    if (confirmAuthBtn) {
+        confirmAuthBtn.addEventListener('click', async () => {
+            if (!pendingChange) return;
+            
+            const username = authUsernameInput.value;
+            const password = authPasswordInput.value;
+            
+            if (!username || !password) {
+                authErrorMsg.textContent = 'Please enter both username and password.';
+                authErrorMsg.classList.remove('is-hidden');
+                return;
+            }
+
+            confirmAuthBtn.classList.add('is-loading');
+            authErrorMsg.classList.add('is-hidden');
+
+            try {
+                // 1. Verify credentials
+                const loginResponse = await fetch('/api/admin/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+                
+                if (!loginResponse.ok) {
+                    throw new Error('Invalid credentials.');
+                }
+
+                // 2. Proceed with status update
+                const { bookingId, newStatus } = pendingChange;
+                
+                const updateResponse = await fetch(`/api/admin/bookings/${bookingId}/status`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status: newStatus })
+                });
+
+                if (!updateResponse.ok) throw new Error('Failed to update status.');
+
+                // Success
+                pendingChange = null; // Clear so closeAuthModal doesn't revert
+                closeAuthModal(); // This cleans up inputs
+                fetchBookings();
+
+            } catch (error) {
+                authErrorMsg.textContent = error.message;
+                authErrorMsg.classList.remove('is-hidden');
+            } finally {
+                confirmAuthBtn.classList.remove('is-loading');
             }
         });
     }
@@ -191,6 +272,19 @@ document.addEventListener('DOMContentLoaded', () => {
                     newStatus: newStatus,
                     previousStatus: previousStatus
                 };
+
+                // Check if the booking is already finalized (Completed or Canceled)
+                if (previousStatus === 'Completed' || previousStatus === 'Canceled') {
+                    if (authModal) {
+                        authModal.classList.add('is-active');
+                        setTimeout(() => authUsernameInput.focus(), 100);
+                    } else {
+                        alert('This booking is finalized. Admin credentials are required.');
+                        event.target.value = previousStatus;
+                        pendingChange = null;
+                    }
+                    return;
+                }
 
                 if (confirmationModal) {
                     document.getElementById('confirm-booking-id').textContent = bookingId;
