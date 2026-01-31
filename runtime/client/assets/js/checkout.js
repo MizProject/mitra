@@ -8,6 +8,8 @@ document.addEventListener('DOMContentLoaded', () => { // This is now checkout.js
     const orderStatus = document.getElementById('order-status');
     const pickupOptionsContainer = document.getElementById('pickup-options-container');
     const returnOptionsContainer = document.getElementById('return-options-container');
+    const scheduleDateInput = document.getElementById('schedule-date');
+    const scheduleTimeInput = document.getElementById('schedule-time');
 
     let cart = []; // This will store our cart items: { service_id, name, price, quantity, service_type }
     let currency = '$'; // Default currency
@@ -107,13 +109,23 @@ document.addEventListener('DOMContentLoaded', () => { // This is now checkout.js
     }
 
     /**
+     * Validates the order form to enable/disable the place order button.
+     */
+    function validateOrderForm() {
+        const hasItems = cart.length > 0;
+        const hasDate = scheduleDateInput && scheduleDateInput.value;
+        const hasTime = scheduleTimeInput && scheduleTimeInput.value;
+        placeOrderButton.disabled = !(hasItems && hasDate && hasTime);
+    }
+
+    /**
      * Renders the current state of the cart to the UI.
      */
     function renderCart() {
         cartItemsContainer.innerHTML = '';
         if (cart.length === 0) {
             cartItemsContainer.innerHTML = '<li>Your cart is empty.</li>';
-            placeOrderButton.disabled = true;
+            validateOrderForm();
         } else {
             let total = 0;
             cart.forEach(item => {
@@ -124,7 +136,7 @@ document.addEventListener('DOMContentLoaded', () => { // This is now checkout.js
             });
             if (cartTotalCurrencyElement) cartTotalCurrencyElement.textContent = currency;
             cartTotalElement.textContent = total.toFixed(2);
-            placeOrderButton.disabled = cart.length === 0; // Only disable if cart is truly empty
+            validateOrderForm();
         }
     }
 
@@ -247,6 +259,15 @@ document.addEventListener('DOMContentLoaded', () => { // This is now checkout.js
     });
 
     placeOrderButton.addEventListener('click', placeOrder);
+
+    if (scheduleDateInput) {
+        scheduleDateInput.addEventListener('change', validateOrderForm);
+        scheduleDateInput.addEventListener('input', validateOrderForm);
+    }
+    if (scheduleTimeInput) {
+        scheduleTimeInput.addEventListener('change', validateOrderForm);
+        scheduleTimeInput.addEventListener('input', validateOrderForm);
+    }
 
     // --- Initial Load ---
     loadServices();
