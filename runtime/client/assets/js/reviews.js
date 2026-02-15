@@ -39,7 +39,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     <div class="card-content">
                         <div class="media">
                             <div class="media-content">
-                                <p class="title is-5">${r.reviewer_name || 'Anonymous'} <small class="is-size-7">on ${r.service_name}</small></p>
+                                <p class="title is-5">${r.is_anonymous ? 'Anonymous (' + Math.random().toString(36).substring(2, 8) + ')' : (r.reviewer_name || 'Anonymous')} <small class="is-size-7">on ${r.service_name}</small></p>
                                 <p class="subtitle is-6 has-text-grey">
                                     ${new Date(r.created_at).toLocaleDateString()}
                                 </p>

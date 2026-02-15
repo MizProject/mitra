@@ -172,7 +172,7 @@ document.addEventListener('DOMContentLoaded', () => {
             document.body.insertAdjacentHTML('beforeend', modalHtml);
 
             const modal = document.getElementById('reviews-modal');
-            const servicesList = document.getElementById('services-list');
+            // const servicesList = document.getElementById('services-list');
             const reviewForm = document.getElementById('review-form');
             const reviewsListContainer = document.getElementById('reviews-list');
             const sortSelect = document.getElementById('review-sort-select');
@@ -212,7 +212,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 <div class="media-content">
                                     <div class="content">
                                         <p>
-                                            <strong>${r.reviewer_name || 'Anonymous'}</strong> <small>${new Date(r.created_at).toLocaleDateString()}</small>
+                                            <strong>${r.is_anonymous ? 'Anonymous (' + Math.random().toString(36).substring(2, 8) + ')' : (r.reviewer_name || 'Anonymous')}</strong> <small>${new Date(r.created_at).toLocaleDateString()}</small>
                                             <br>
                                             ${'⭐'.repeat(r.rating)}
                                             <br>
