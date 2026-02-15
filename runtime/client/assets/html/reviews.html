@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reviews - Mitra</title>
+    <link rel="stylesheet" href="/assets/npm/bulma/css/bulma.min.css">
+    <link rel="stylesheet" href="/assets/npm/fontawesome-free/css/all.min.css">
+    <link rel="stylesheet" href="/assets/runtime/client/assets/css/index.css">
+    <link rel="stylesheet" href="/assets/runtime/client/assets/css/reviews.css">
+</head>
+<body>
+    <!-- Navigation Bar (Matches home.html) -->
+    <nav class="navbar is-light" role="navigation" aria-label="main navigation">
+        <div class="navbar-brand">
+            <a class="navbar-item" href="/" id="navbar-brand-logo">
+                <strong class="is-size-4">Business Name</strong>
+            </a>
+            <a role="button" class="navbar-burger" aria-label="menu" aria-expanded="false" data-target="navbarClientMenu"><span aria-hidden="true"></span><span aria-hidden="true"></span><span aria-hidden="true"></span></a>
+        </div>
+        <div id="navbarClientMenu" class="navbar-menu">
+            <div class="navbar-start">
+                <a class="navbar-item" href="/home">Dashboard</a>
+                <a class="navbar-item" href="/my-bookings">My Bookings</a>
+                <a class="navbar-item is-active" href="/reviews">Reviews</a>
+                <a class="navbar-item" href="/settings">Settings</a>
+            </div>
+            <div class="navbar-end">
+                <div class="navbar-item">
+                    <div class="buttons">
+                        <a class="button is-light" id="logout-button">Log out</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <section class="section">
+        <div class="container">
+            <div class="is-flex is-justify-content-space-between is-align-items-center mb-5">
+                <div>
+                    <h1 class="title">Customer Reviews</h1>
+                    <p class="subtitle">See what others are saying about our services.</p>
+                </div>
+                <div class="select">
+                    <select id="sort-reviews">
+                        <option value="newest">Newest First</option>
+                        <option value="oldest">Oldest First</option>
+                        <option value="highest">Highest Rated</option>
+                        <option value="lowest">Lowest Rated</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div id="all-reviews-container" class="columns is-multiline">
+                <!-- Reviews will be loaded here -->
+                <div class="column is-12">
+                    <progress class="progress is-medium is-primary" max="100">Loading...</progress>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Auth check -->
+    <script src="/assets/runtime/client/assets/js/auth.js"></script>
+    <!-- Universal Theme Script -->
+    <script src="/assets/runtime/client/assets/js/theme_config.js"></script>
+    <!-- UI -->
+    <script src="/assets/runtime/client/assets/js/navigation.js"></script>
+    <script src="/assets/runtime/client/assets/js/logout.js"></script>
+    <!-- Page Logic -->
+    <script src="/assets/runtime/client/assets/js/reviews.js"></script>
+</body>
+</html>

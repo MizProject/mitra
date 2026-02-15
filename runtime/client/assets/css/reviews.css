@@ -1,0 +1,11 @@
+.review-card {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.review-card .content {
+    flex-grow: 1;
+}
+
+.review-star { color: gold; }

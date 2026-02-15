@@ -5,3 +5,19 @@
         .booking-card { margin-bottom: 1.5rem; }
         .content-tab { display: none; }
         .content-tab.is-active { display: block; }
+
+/* Star Rating Styles */
+.star-rating {
+    font-size: 1.5rem;
+    color: #dbdbdb;
+    cursor: pointer;
+}
+.star-rating .fa-star {
+    transition: color 0.2s;
+}
+.star-rating .fa-star:hover {
+    color: #ffe08a;
+}
+.star-rating .fa-star.checked {
+    color: #ffdd57;
+}

@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Review Manager - Mitra Admin</title>
+    <link rel="stylesheet" href="/assets/npm/bulma/css/bulma.min.css">
+    <link rel="stylesheet" href="/assets/npm/fontawesome-free/css/all.min.css">
+    <link rel="stylesheet" href="/assets/runtime/client/assets/css/index.css">
+    <link rel="stylesheet" href="/assets/runtime/admin/assets/css/bookings.css">
+    <link rel="stylesheet" href="/assets/runtime/client/assets/css/index.css">
+    <link rel="stylesheet" href="/assets/runtime/admin/assets/css/bookings.css">
+</head>
+<body>
+    <nav class="navbar is-dark" role="navigation" aria-label="main navigation">
+        <div class="navbar-brand">
+            <a class="navbar-item" href="/admin" id="navbar-brand-logo"><strong>Admin Panel</strong></a>
+            <a role="button" class="navbar-burger" aria-label="menu" aria-expanded="false" data-target="admin-sidebar">
+                <span aria-hidden="true"></span><span aria-hidden="true"></span><span aria-hidden="true"></span>
+            </a>
+        </div>
+        <div class="navbar-end">
+            <div class="navbar-item"><div class="buttons"><a class="button is-light" id="logout-button">Log out</a></div></div>
+        </div>
+    </nav>
+
+    <div class="columns" style="margin: 0;">
+        <!-- Sidebar Menu -->
+        <div class="column is-2 has-background-light" id="admin-sidebar" style="min-height: calc(100vh - 52px);">
+            <aside class="menu p-4">
+                <p class="menu-label">General</p>
+                <ul class="menu-list">
+                    <li><a href="/admin"><span class="icon-text"><span class="icon"><i class="fas fa-tachometer-alt"></i></span><span>Dashboard</span></span></a></li>
+                    <li><a href="/admin/search"><span class="icon-text"><span class="icon"><i class="fas fa-search"></i></span><span>Search</span></span></a></li>
+                </ul>
+                <p class="menu-label">Management</p>
+                <ul class="menu-list">
+                    <li><a href="/admin/bookings"><span class="icon-text"><span class="icon"><i class="fas fa-tasks"></i></span><span>Bookings</span></span></a></li>
+                    <li><a href="/admin/banners"><span class="icon-text"><span class="icon"><i class="fas fa-images"></i></span><span>Banners</span></span></a></li>
+                    <li><a href="/admin/services"><span class="icon-text"><span class="icon"><i class="fas fa-concierge-bell"></i></span><span>Services</span></span></a></li>
+                    <li><a href="/admin/reviews" class="is-active"><span class="icon-text"><span class="icon"><i class="fas fa-star"></i></span><span>Reviews</span></span></a></li>
+                </ul>
+                <p class="menu-label">Administration</p>
+                <ul class="menu-list">
+                    <li><a href="/admin/settings"><span class="icon-text"><span class="icon"><i class="fas fa-cog"></i></span><span>Settings</span></span></a></li>
+                    <li><a href="/admin/accounts"><span class="icon-text"><span class="icon"><i class="fas fa-users-cog"></i></span><span>Accounts</span></span></a></li>
+                </ul>
+            </aside>
+        </div>
+
+        <!-- Main Content -->
+        <div class="column is-10">
+            <section class="section">
+                <div class="container">
+                    <h1 class="title">Review Manager</h1>
+                    
+                    <div class="box">
+                        <div class="columns">
+                            <div class="column">
+                                <div class="field">
+                                    <div class="control has-icons-left">
+                                        <input class="input" type="text" id="search-input" placeholder="Search by service, customer, or comment...">
+                                        <span class="icon is-small is-left"><i class="fas fa-search"></i></span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="column is-narrow">
+                                <div class="select">
+                                    <select id="sort-select">
+                                        <option value="created_at_DESC">Newest First</option>
+                                        <option value="created_at_ASC">Oldest First</option>
+                                        <option value="rating_DESC">Highest Rated</option>
+                                        <option value="rating_ASC">Lowest Rated</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="reviews-container">
+                        <progress class="progress is-small is-primary" max="100">Loading...</progress>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <script>
+        let searchTimeout;
+
+        async function loadReviews() {
+            const container = document.getElementById('reviews-container');
+            const search = document.getElementById('search-input').value;
+            const sortValue = document.getElementById('sort-select').value;
+            const [sortBy, sortOrder] = sortValue.split('_');
+
+            const params = new URLSearchParams({
+                search,
+                sortBy,
+                sortOrder
+            });
+
+            try {
+                const res = await fetch(`/api/admin/reviews?${params}`);
+                if (!res.ok) throw new Error('Failed to load reviews');
+                const reviews = await res.json();
+                
+                if (reviews.length === 0) {
+                    container.innerHTML = '<div class="notification is-info">No reviews found.</div>';
+                    return;
+                }
+                
+                container.innerHTML = reviews.map(r => `
+                    <div class="card" id="review-${r.review_id}">
+                        <div class="card-content">
+                            <div class="media">
+                                <div class="media-content">
+                                    <p class="title is-5">${r.service_name}</p>
+                                    <p class="subtitle is-6">
+                                        ${r.first_name ? `${r.first_name} ${r.last_name} (${r.email})` : 'Guest'}
+                                        ${r.is_anonymous ? '<span class="tag is-warning is-light ml-2">Anonymous</span>' : ''}
+                                        ${r.booking_id ? `<span class="tag is-info is-light ml-2">Booking #${r.booking_id}</span>` : ''}
+                                    </p>
+                                </div>
+                                <div class="media-right">
+                                    <button class="button is-danger is-small delete-btn" onclick="deleteReview(${r.review_id})">
+                                        <span class="icon"><i class="fas fa-trash"></i></span>
+                                        <span>Delete</span>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="content">
+                                <p>
+                                    ${'⭐'.repeat(r.rating)}
+                                    <br>
+                                    ${r.comment || '<i>No comment provided.</i>'}
+                                </p>
+                                <small class="has-text-grey">${new Date(r.created_at).toLocaleString()}</small>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (err) {
+                container.innerHTML = `<div class="notification is-danger">${err.message}</div>`;
+            }
+        }
+
+        async function deleteReview(id) {
+            if (!confirm('Are you sure you want to delete this review?')) return;
+            
+            const btn = document.querySelector(`#review-${id} .delete-btn`);
+            if(btn) btn.classList.add('is-loading');
+            
+            try {
+                const res = await fetch(`/api/admin/reviews/${id}`, { method: 'DELETE' });
+                if (res.ok) {
+                    document.getElementById(`review-${id}`).remove();
+                } else {
+                    alert('Failed to delete review.');
+                }
+            } catch (err) {
+                alert('Error deleting review.');
+            } finally {
+                if(btn) btn.classList.remove('is-loading');
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadReviews();
+            
+            document.getElementById('search-input').addEventListener('input', () => {
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(loadReviews, 300);
+            });
+            
+            document.getElementById('sort-select').addEventListener('change', loadReviews);
+        });
+    </script>
+    <script src="/assets/runtime/admin/assets/js/session.js"></script>
+    <script src="/assets/runtime/client/assets/js/theme_config.js"></script>
+    <script src="/assets/runtime/admin/assets/js/logout.js"></script>
+    <script src="/assets/runtime/admin/assets/js/navigation.js"></script>
+</body>
+</html>

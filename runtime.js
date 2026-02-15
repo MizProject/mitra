@@ -157,6 +157,25 @@ const db = new sqlite3.Database(dbPath, (err) => {
                 }
             });
         });
+
+        // Ensure reviews table exists
+        db.run(`CREATE TABLE IF NOT EXISTS reviews (
+            review_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            service_id INTEGER NOT NULL,
+            customer_id INTEGER,
+            rating INTEGER NOT NULL,
+            comment TEXT,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            booking_id INTEGER,
+            FOREIGN KEY (service_id) REFERENCES services (service_id) ON DELETE CASCADE
+        )`, (err) => {
+            if (!err) {
+                // Add columns if they don't exist (SQLite doesn't support IF NOT EXISTS for columns easily, so we try and ignore error)
+                db.run("ALTER TABLE reviews ADD COLUMN is_anonymous BOOLEAN DEFAULT 0", () => {});
+                db.run("ALTER TABLE reviews ADD COLUMN edit_count INTEGER DEFAULT 0", () => {});
+                db.run("ALTER TABLE reviews ADD COLUMN booking_id INTEGER", () => {});
+            }
+        });
     }
 });
 
@@ -213,6 +232,14 @@ app.get('/admin/accounts', (req, res) => {
     }
 });
 
+app.get('/admin/reviews', (req, res) => {
+    if (req.session.adminId) {
+        res.sendFile(path.join(__dirname, 'runtime/admin/assets/html/reviews.html'));
+    } else {
+        res.redirect('/admin-login');
+    }
+});
+
 app.get('/admin/search', (req, res) => {
     if (req.session.adminId) {
         res.sendFile(path.join(__dirname, 'runtime/admin/assets/html/search.html'));
@@ -258,10 +285,123 @@ app.get('/my-bookings', (req, res) => {
     res.sendFile(path.join(__dirname, 'runtime/client/assets/html/my-bookings.html'));
 });
 
+app.get('/reviews', (req, res) => {
+    res.sendFile(path.join(__dirname, 'runtime/client/assets/html/reviews.html'));
+});
+
 
 // app.get('/order-confirmation', (req, res) => {
 //     res.sendFile(path.join(__dirname'));
 // })
+
+// --- Reviews API ---
+app.get('/api/reviews/:serviceId', (req, res) => {
+    const { serviceId } = req.params;
+    const sql = `
+        SELECT 
+            r.*, 
+            c.first_name, c.last_name 
+        FROM reviews r 
+        LEFT JOIN customers c ON r.customer_id = c.customer_id 
+        WHERE r.service_id = ? 
+        ORDER BY r.created_at DESC
+    `;
+    db.all(sql, [serviceId], (err, rows) => {
+        if (err) return res.status(500).json({ error: err.message });
+        const processed = rows ? rows.map(row => ({
+            ...row,
+            reviewer_name: row.is_anonymous ? 'Anonymous' : `${row.first_name || ''} ${row.last_name || ''}`.trim() || 'Customer'
+        })) : [];
+        res.json(processed);
+    });
+});
+
+app.get('/api/public/reviews', (req, res) => {
+    const sql = `
+        SELECT 
+            r.rating, r.comment, r.created_at, r.is_anonymous,
+            s.service_name,
+            c.first_name, c.last_name
+        FROM reviews r
+        JOIN services s ON r.service_id = s.service_id
+        LEFT JOIN customers c ON r.customer_id = c.customer_id
+        ORDER BY r.created_at DESC
+    `;
+    db.all(sql, [], (err, rows) => {
+        if (err) return res.status(500).json({ error: err.message });
+        const processed = rows ? rows.map(row => ({
+            ...row,
+            reviewer_name: row.is_anonymous ? 'Anonymous' : `${row.first_name || ''} ${row.last_name || ''}`.trim() || 'Customer'
+        })) : [];
+        res.json(processed);
+    });
+});
+
+app.get('/api/customer/reviews', (req, res) => {
+    if (!req.session || !req.session.customerId) {
+        return res.status(401).json({ error: "User not authenticated." });
+    }
+    db.all('SELECT * FROM reviews WHERE customer_id = ?', [req.session.customerId], (err, rows) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json(rows || []);
+    });
+});
+
+app.post('/api/reviews', (req, res) => {
+    const { serviceId, rating, comment, isAnonymous } = req.body;
+    const bookingId = req.body.bookingId ? parseInt(req.body.bookingId, 10) : null;
+    // Allow anonymous reviews, but track customer if logged in
+    const customerId = req.session.customerId || null; 
+    
+    if (!serviceId || !rating) {
+        return res.status(400).json({ error: "Service ID and Rating are required." });
+    }
+
+    if (!customerId) {
+        // Guest review (if allowed)
+        const sql = 'INSERT INTO reviews (service_id, customer_id, rating, comment, is_anonymous, booking_id) VALUES (?, ?, ?, ?, ?, ?)';
+        db.run(sql, [serviceId, null, rating, comment, isAnonymous ? 1 : 0, bookingId || null], function(err) {
+            if (err) return res.status(500).json({ error: "Failed to submit review." });
+            res.status(201).json({ message: "Review submitted successfully.", reviewId: this.lastID });
+        });
+        return;
+    }
+
+    // Check if review exists for this user and service
+    let checkSql = 'SELECT review_id, edit_count FROM reviews WHERE service_id = ? AND customer_id = ?';
+    let params = [serviceId, customerId];
+
+    if (bookingId) {
+        checkSql += ' AND booking_id = ?';
+        params.push(bookingId);
+    } else {
+        checkSql += ' AND booking_id IS NULL';
+    }
+
+    db.get(checkSql, params, (err, row) => {
+        if (err) return res.status(500).json({ error: "Database error." });
+
+        if (row) {
+            // Review exists, check edit count
+            if (row.edit_count >= 1) {
+                return res.status(403).json({ error: "You have already edited this review once. You cannot edit it again." });
+            }
+
+            const updateSql = 'UPDATE reviews SET rating = ?, comment = ?, is_anonymous = ?, edit_count = edit_count + 1, created_at = CURRENT_TIMESTAMP WHERE review_id = ?';
+            db.run(updateSql, [rating, comment, isAnonymous ? 1 : 0, row.review_id], function(err) {
+                if (err) return res.status(500).json({ error: "Failed to update review." });
+                res.json({ message: "Review updated successfully." });
+            });
+        } else {
+            // New review
+            const insertSql = 'INSERT INTO reviews (service_id, customer_id, rating, comment, is_anonymous, booking_id) VALUES (?, ?, ?, ?, ?, ?)';
+            db.run(insertSql, [serviceId, customerId, rating, comment, isAnonymous ? 1 : 0, bookingId || null], function(err) {
+                if (err) return res.status(500).json({ error: "Failed to submit review." });
+                res.status(201).json({ message: "Review submitted successfully.", reviewId: this.lastID });
+            });
+        }
+    });
+});
 
 // --- Runtime API Endpoints ---
 
@@ -340,6 +480,56 @@ app.get('/api/admin/bookings', (req, res) => {
             return res.status(500).json({ error: "Failed to retrieve bookings." });
         }
         res.json(rows || []);
+    });
+});
+
+app.get('/api/admin/reviews', (req, res) => {
+    debugLogWriteToFile("Admin request for all reviews received.");
+    if (!req.session || !req.session.adminId) {
+        return res.status(401).json({ error: "Administrator not authenticated." });
+    }
+
+    const { search, sortBy, sortOrder } = req.query;
+
+    let sql = `
+        SELECT 
+            r.review_id, r.rating, r.comment, r.created_at, r.is_anonymous, r.booking_id,
+            s.service_name,
+            c.first_name, c.last_name, c.email
+        FROM reviews r
+        JOIN services s ON r.service_id = s.service_id
+        LEFT JOIN customers c ON r.customer_id = c.customer_id
+        WHERE 1=1
+    `;
+
+    const params = [];
+
+    if (search) {
+        sql += ` AND (s.service_name LIKE ? OR c.first_name LIKE ? OR c.last_name LIKE ? OR r.comment LIKE ?)`;
+        const term = `%${search}%`;
+        params.push(term, term, term, term);
+    }
+
+    const validSorts = ['created_at', 'rating'];
+    const sortCol = validSorts.includes(sortBy) ? `r.${sortBy}` : 'r.created_at';
+    const order = (sortOrder && sortOrder.toUpperCase() === 'ASC') ? 'ASC' : 'DESC';
+
+    sql += ` ORDER BY ${sortCol} ${order}`;
+
+    db.all(sql, params, (err, rows) => {
+        if (err) return res.status(500).json({ error: "Failed to retrieve reviews." });
+        res.json(rows || []);
+    });
+});
+
+app.delete('/api/admin/reviews/:id', (req, res) => {
+    if (!req.session || !req.session.adminId) return res.status(401).json({ error: "Administrator not authenticated." });
+
+    const { id } = req.params;
+    db.run('DELETE FROM reviews WHERE review_id = ?', [id], function(err) {
+        if (err) return res.status(500).json({ error: "Database error deleting review." });
+        if (this.changes === 0) return res.status(404).json({ error: "Review not found." });
+        res.json({ message: "Review deleted successfully." });
     });
 });
 
@@ -947,6 +1137,7 @@ app.get('/api/customer/bookings', (req, res) => {
             (
                 SELECT json_group_array(
                     json_object(
+                        'service_id', s.service_id,
                         'service_type', s.service_type,
                         'service_name', s.service_name,
                         'quantity', bi.quantity,
@@ -1020,6 +1211,7 @@ app.get('/api/customer/bookings/:bookingId', (req, res) => {
             (
                 SELECT json_group_array(
                     json_object(
+                        'service_id', s.service_id,
                         'service_name', s.service_name,
                         'quantity', bi.quantity,
                         'price', bi.price_at_time_of_booking

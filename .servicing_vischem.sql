@@ -138,3 +138,15 @@ CREATE TABLE IF NOT EXISTS service_availability (
     is_booked BOOLEAN DEFAULT 0,
     FOREIGN KEY (service_id) REFERENCES services (service_id) ON DELETE CASCADE
 );
+
+-- Reviews for services
+CREATE TABLE IF NOT EXISTS reviews (
+    review_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    service_id INTEGER NOT NULL,
+    customer_id INTEGER,
+    rating INTEGER NOT NULL,
+    comment TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    booking_id INTEGER,
+    FOREIGN KEY (service_id) REFERENCES services (service_id) ON DELETE CASCADE
+);

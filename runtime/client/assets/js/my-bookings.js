@@ -140,6 +140,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 <a class="card-footer-item show-qr-code" data-booking-id="${booking.booking_id}">
                     <span class="icon-text"><span class="icon"><i class="fas fa-qrcode"></i></span><span>Show QR Code and Recipt</span></span>
                 </a>
+                ${booking.status === 'Completed' ? `<a class="card-footer-item has-text-primary rate-booking" data-booking-id="${booking.booking_id}">
+                    <span class="icon-text"><span class="icon"><i class="fas fa-star"></i></span><span>Rate Services</span></span>
+                </a>` : ''}
                 ${booking.status === 'Pending' ? `<a class="card-footer-item has-text-danger cancel-booking" data-booking-id="${booking.booking_id}">Cancel Booking</a>` : ''}
             </div>
         `;
@@ -188,6 +191,13 @@ document.addEventListener('DOMContentLoaded', () => {
             } catch (error) {
                 alert(`Error: ${error.message}`);
             }
+        }
+
+        // --- Rate Booking Logic ---
+        if (target.classList.contains('rate-booking')) {
+            const bookings = JSON.parse(sessionStorage.getItem('my-bookings-cache') || '[]');
+            const bookingData = bookings.find(b => b.booking_id.toString() === bookingId);
+            if (bookingData) openRatingModal(bookingData);
         }
 
         // --- Show QR Code Logic ---
@@ -239,6 +249,314 @@ document.addEventListener('DOMContentLoaded', () => {
                 link.click();
             });
         }
+    }
+
+    /**
+     * Opens the rating modal and populates it with items to rate.
+     * @param {object} booking - The booking object.
+     */
+    function openRatingModal(booking) {
+        const modal = document.getElementById('rating-modal');
+        const container = document.getElementById('rating-items-container');
+        const closeBtns = modal.querySelectorAll('.delete, .modal-background, #close-rating-modal');
+
+        // Parse items
+        let items = [];
+        try { items = JSON.parse(booking.items); } catch(e) {}
+
+        container.innerHTML = '';
+
+        if (items.length === 0) {
+            container.innerHTML = '<p>No items found to rate.</p>';
+        } else {
+            items.forEach((item, index) => {
+                // We need the service_id. The current JSON structure in my-bookings query might not have it directly 
+                // if it wasn't selected in the SQL. 
+                // However, looking at runtime.js: 'service_name' is selected. 
+                // We need to ensure service_id is available. 
+                // *Self-correction*: The current SQL for customer bookings aggregates JSON with service_type, service_name, quantity, price.
+                // It does NOT include service_id. We need to rely on service_name or update backend.
+                // For now, let's assume we can't easily get service_id without backend change.
+                // BUT, the user asked to modify client side. 
+                // Let's check runtime.js again.
+                // The SQL in /api/customer/bookings does NOT select service_id.
+                // I will assume for this task I can't change backend SQL easily without breaking context rules (though I can if needed).
+                // Wait, I can modify runtime.js if needed. But let's see if we can match by name or if I should just update the SQL.
+                // Updating SQL is safer.
+                
+                // Since I cannot update runtime.js in this specific step (I already did in previous turns, but let's stick to the requested files).
+                // Actually, I can't submit a review without service_id.
+                // I will try to find the service_id from the public services list if possible, or just fail gracefully.
+                // Better approach: The user asked to modify my-bookings files. I will try to fetch all services to map names to IDs.
+                
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'box';
+                itemDiv.innerHTML = `
+                    <p class="title is-6">${item.service_name}</p>
+                    <div class="field">
+                        <div class="control star-rating" id="star-rating-${index}">
+                            <i class="fas fa-star" data-value="1"></i>
+                            <i class="fas fa-star" data-value="2"></i>
+                            <i class="fas fa-star" data-value="3"></i>
+                            <i class="fas fa-star" data-value="4"></i>
+                            <i class="fas fa-star" data-value="5"></i>
+                        </div>
+                    </div>
+                    <div class="field">
+                        <div class="control">
+                            <textarea class="textarea is-small" placeholder="Write a review..." id="review-comment-${index}"></textarea>
+                        </div>
+                    </div>
+                    <button class="button is-small is-primary submit-review-btn" data-index="${index}" data-service-name="${item.service_name}">Submit Review</button>
+                `;
+                container.appendChild(itemDiv);
+            });
+        }
+
+        // Event delegation for stars and submit
+        container.onclick = async (e) => {
+            if (e.target.matches('.fa-star')) {
+                const value = e.target.dataset.value;
+                const parent = e.target.closest('.star-rating');
+                const stars = parent.querySelectorAll('.fa-star');
+                stars.forEach(s => {
+                    if (s.dataset.value <= value) s.classList.add('checked');
+                    else s.classList.remove('checked');
+                });
+                parent.dataset.selectedValue = value;
+            }
+
+            if (e.target.classList.contains('submit-review-btn')) {
+                const btn = e.target;
+                const index = btn.dataset.index;
+                const serviceName = btn.dataset.serviceName;
+                const ratingContainer = document.getElementById(`star-rating-${index}`);
+                const rating = ratingContainer.dataset.selectedValue;
+                const comment = document.getElementById(`review-comment-${index}`).value;
+
+                if (!rating) {
+                    alert('Please select a star rating.');
+                    return;
+                }
+
+                btn.classList.add('is-loading');
+
+                // Resolve Service ID
+                try {
+                    // Fetch all services to find the ID (inefficient but works without backend changes)
+                    const servicesRes = await fetch('/api/get-services');
+                    const services = await servicesRes.json();
+                    const service = services.find(s => s.service_name === serviceName);
+                    
+                    if (!service) throw new Error('Service ID not found.');
+
+                    const res = await fetch('/api/reviews', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ serviceId: service.service_id, rating, comment })
+                    });
+
+                    if (res.ok) {
+                        btn.classList.remove('is-primary', 'is-loading');
+                        btn.classList.add('is-success');
+                        btn.textContent = 'Submitted';
+                        btn.disabled = true;
+                    } else {
+                        throw new Error('Failed to submit.');
+                    }
+                } catch (err) {
+                    alert(err.message);
+                    btn.classList.remove('is-loading');
+                }
+            }
+        };
+
+        modal.classList.add('is-active');
+
+        const closeModal = () => modal.classList.remove('is-active');
+        closeBtns.forEach(btn => btn.onclick = closeModal);
+    }
+
+
+    // --- Rating Logic ---
+    const ratingContainer = document.getElementById('rating-items-container');
+    if (ratingContainer) {
+        ratingContainer.addEventListener('click', async (e) => {
+            // Handle Rating Button Click
+            const ratingBtn = e.target.closest('.rating-btn');
+            if (ratingBtn) {
+                const value = parseInt(ratingBtn.dataset.value, 10);
+                const parent = ratingBtn.closest('.rating-buttons');
+                const buttons = parent.querySelectorAll('.rating-btn');
+                
+                buttons.forEach(b => {
+                    const bValue = parseInt(b.dataset.value, 10);
+                    const icon = b.querySelector('i');
+                    if (bValue <= value) {
+                        b.classList.add('is-warning');
+                        icon.classList.remove('far');
+                        icon.classList.add('fas');
+                    } else {
+                        b.classList.remove('is-warning');
+                        icon.classList.remove('fas');
+                        icon.classList.add('far');
+                    }
+                });
+                parent.dataset.selectedValue = value;
+            }
+
+            // Handle Submit Click
+            if (e.target.classList.contains('submit-review-btn')) {
+                const btn = e.target;
+                const index = btn.dataset.index;
+                const serviceId = btn.dataset.serviceId;
+                const bookingId = btn.dataset.bookingId;
+                const ratingBox = document.getElementById(`star-rating-${index}`);
+                const rating = ratingBox.dataset.selectedValue;
+                const comment = document.getElementById(`review-comment-${index}`).value;
+                const isAnonymous = document.getElementById(`review-anonymous-${index}`).checked;
+
+                if (!rating) {
+                    alert('Please select a star rating.');
+                    return;
+                }
+
+                btn.classList.add('is-loading');
+
+                try {
+                    const res = await fetch('/api/reviews', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ serviceId: serviceId, rating, comment, isAnonymous, bookingId: parseInt(bookingId, 10) })
+                    });
+
+                    if (res.ok) {
+                        btn.classList.remove('is-primary', 'is-loading');
+                        btn.classList.add('is-success');
+                        btn.textContent = 'Submitted';
+                        btn.disabled = true;
+                    } else {
+                        throw new Error('Failed to submit.');
+                    }
+                } catch (err) {
+                    alert(err.message);
+                    btn.classList.remove('is-loading');
+                }
+            }
+        });
+    }
+
+    /**
+     * Opens the rating modal and populates it with items to rate.
+     * @param {object} booking - The booking object.
+     */
+    async function openRatingModal(booking) {
+        const modal = document.getElementById('rating-modal');
+        const container = document.getElementById('rating-items-container');
+        const closeBtns = modal.querySelectorAll('.delete, .modal-background, #close-rating-modal');
+
+        // Helper to generate static stars for read-only view
+        const getStaticStars = (rating) => {
+            let html = '<span class="has-text-warning">';
+            for (let i = 1; i <= 5; i++) {
+                html += `<i class="${i <= rating ? 'fas' : 'far'} fa-star"></i>`;
+            }
+            return html + '</span>';
+        };
+
+        container.innerHTML = '<progress class="progress is-small is-primary" max="100"></progress>';
+        modal.classList.add('is-active');
+
+        // Parse items
+        let items = [];
+        try { items = JSON.parse(booking.items); } catch(e) {}
+
+        // Fetch existing reviews for this user
+        let userReviews = [];
+        try {
+            const res = await fetch(`/api/customer/reviews?t=${Date.now()}`);
+            if (res.ok) userReviews = await res.json();
+        } catch (e) { console.error("Failed to fetch user reviews", e); }
+
+        container.innerHTML = '';
+
+        if (items.length === 0) {
+            container.innerHTML = '<p>No items found to rate.</p>';
+        } else {
+            items.forEach((item, index) => {
+                // Find existing review for this service AND this booking
+                const review = userReviews.find(r => r.service_id === item.service_id && r.booking_id == booking.booking_id);
+                
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'box';
+
+                if (review && review.edit_count >= 1) {
+                    // Read-only view
+                    itemDiv.innerHTML = `
+                        <p class="title is-6">${item.service_name}</p>
+                        <div class="mb-2 is-size-5">
+                            ${getStaticStars(review.rating)}
+                        </div>
+                        <div class="content">
+                            <p><strong>Your Review:</strong></p>
+                            <p class="is-italic">"${review.comment || 'No comment provided.'}"</p>
+                        </div>
+                        <p class="is-size-7 has-text-grey mb-2">
+                            ${review.is_anonymous ? 'Posted anonymously' : 'Posted publicly'} • ${new Date(review.created_at).toLocaleDateString()}
+                        </p>
+                        <div class="notification is-light is-info p-2 is-size-7">
+                            <span class="icon"><i class="fas fa-lock"></i></span>
+                            <span>This review has been finalized and can no longer be edited.</span>
+                        </div>
+                    `;
+                } else {
+                    // Editable view (New or Edit)
+                    const rating = review ? review.rating : 0;
+                    const comment = review ? review.comment : '';
+                    const isAnon = review ? review.is_anonymous : false;
+                    const btnText = review ? 'Update Review' : 'Submit Review';
+
+                    // Generate star buttons with pre-filled state
+                    let starsHtml = '';
+                    for(let i=1; i<=5; i++) {
+                        const isChecked = i <= rating ? 'is-warning' : '';
+                        const iconClass = i <= rating ? 'fas' : 'far';
+                        starsHtml += `<button class="button rating-btn ${isChecked}" data-value="${i}" type="button"><span class="icon"><i class="${iconClass} fa-star"></i></span></button>`;
+                    }
+
+                    itemDiv.innerHTML = `
+                    <p class="title is-6">${item.service_name}</p>
+                    <div class="field">
+                        <label class="label is-small">Rating</label>
+                        <div class="buttons has-addons rating-buttons mb-2" id="star-rating-${index}" data-selected-value="${rating}">
+                            ${starsHtml}
+                        </div>
+                    </div>
+                    <div class="field">
+                        <label class="label is-small">Comment</label>
+                        <div class="control">
+                            <textarea class="textarea is-small" placeholder="Write a review..." id="review-comment-${index}">${comment}</textarea>
+                        </div>
+                    </div>
+                    <div class="field">
+                        <div class="control">
+                            <label class="checkbox">
+                                <input type="checkbox" id="review-anonymous-${index}" ${isAnon ? 'checked' : ''}>
+                                Post Anonymously
+                            </label>
+                        </div>
+                    </div>
+                    <button class="button is-small is-primary submit-review-btn" data-index="${index}" data-service-id="${item.service_id}" data-booking-id="${booking.booking_id}">${btnText}</button>
+                    <p class="help is-info">${review ? 'You have one edit remaining.' : 'You can edit your review only once.'}</p>
+                    `;
+                }
+                
+                container.appendChild(itemDiv);
+            });
+        }
+
+        const closeModal = () => modal.classList.remove('is-active');
+        closeBtns.forEach(btn => btn.onclick = closeModal);
     }
 
     /**
