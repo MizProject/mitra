@@ -108,6 +108,48 @@
     </section>
 </body>
 
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const dateInput = document.getElementById('schedule-date');
+        const timeInput = document.getElementById('schedule-time');
+
+        if (dateInput) {
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            const today = `${year}-${month}-${day}`;
+            dateInput.min = today;
+
+            dateInput.addEventListener('change', function() {
+                if (this.value && this.value < today) {
+                    alert('You cannot book a date in the past.');
+                    this.value = '';
+                }
+                validateTime();
+            });
+        }
+
+        if (timeInput) {
+            timeInput.addEventListener('change', validateTime);
+        }
+
+        function validateTime() {
+            if (!dateInput || !timeInput || !dateInput.value || !timeInput.value) return;
+            
+            const now = new Date();
+            const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+            
+            if (dateInput.value === today) {
+                const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+                if (timeInput.value < currentTime) {
+                    alert('You cannot book a time in the past.');
+                    timeInput.value = '';
+                }
+            }
+        }
+    });
+</script>
 <script src="/assets/runtime/client/assets/js/auth.js"></script>
 <script src="/assets/runtime/client/assets/js/theme_config.js"></script>
 <script src="/assets/runtime/client/assets/js/navigation.js"></script>

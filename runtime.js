@@ -260,6 +260,10 @@ app.get('/login-customer', (req, res) => {
     res.sendFile(path.join(__dirname, 'runtime/client/assets/html/login.html'));
 })
 
+app.get('/recovery', (req, res) => {
+    res.sendFile(path.join(__dirname, 'runtime/client/assets/html/recovery.html'));
+});
+
 app.get('/home', (req, res) => {
     res.sendFile(path.join(__dirname, 'runtime/client/assets/html/home.html'));
 })
@@ -1321,6 +1325,32 @@ app.post('/api/customer/login', (req, res) => {
             }
         } catch (error) {
             res.status(500).json({ error: "Error during authentication." });
+        }
+    });
+});
+
+app.post('/api/customer/reset-password-via-phone', async (req, res) => {
+    debugLogWriteToFile("Received request for /api/customer/reset-password-via-phone");
+    const { email, phone_number, new_password } = req.body;
+
+    if (!email || !phone_number || !new_password) {
+        return res.status(400).json({ error: "Email, phone number, and new password are required." });
+    }
+
+    const sql = 'SELECT customer_id FROM customers WHERE email = ? AND phone_number = ?';
+    db.get(sql, [email, phone_number], async (err, row) => {
+        if (err) return res.status(500).json({ error: err.message });
+        if (!row) return res.status(401).json({ error: "Invalid email or phone number." });
+
+        try {
+            const hashedPassword = await bcrypt.hash(new_password, 10);
+            const updateSql = 'UPDATE customers SET password_hash = ? WHERE customer_id = ?';
+            db.run(updateSql, [hashedPassword, row.customer_id], function(err) {
+                if (err) return res.status(500).json({ error: "Failed to update password." });
+                res.json({ message: "Password reset successfully." });
+            });
+        } catch (error) {
+            res.status(500).json({ error: "Error processing password." });
         }
     });
 });

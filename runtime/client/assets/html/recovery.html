@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Account Recovery</title>
+    <link rel="stylesheet" href="/assets/npm/bulma/css/bulma.min.css">
+    <link rel="stylesheet" href="/assets/runtime/client/assets/css/hero.css">
+    <link rel="stylesheet" href="/assets/npm/fontawesome-free/css/all.min.css">
+    <style>
+        .tabs.is-boxed li.is-active a {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+            color: white;
+        }
+        .button.is-primary {
+            background-color: var(--primary-color);
+        }
+        .button.is-primary:hover {
+            background-color: var(--secondary-color);
+        }
+    </style>
+</head>
+<body>
+    <section class="section">
+        <div class="container">
+            <div class="columns is-centered">
+                <div class="column is-half">
+                    <h1 class="title has-text-centered">Account Recovery</h1>
+                    <div class="tabs is-boxed is-fullwidth">
+                        <ul>
+                            <li class="is-active" data-tab="customer-tab"><a>Customer</a></li>
+                            <li data-tab="admin-tab"><a>Administrator</a></li>
+                        </ul>
+                    </div>
+                    <div class="box">
+                        <!-- Customer Recovery -->
+                        <div id="customer-tab" class="content-tab">
+                            <p class="mb-4">Recover your customer account using your email and phone number.</p>
+                            <form id="customer-recovery-form">
+                                <div class="field">
+                                    <label class="label">Email</label>
+                                    <div class="control has-icons-left">
+                                        <input class="input" type="email" placeholder="e.g. alex@example.com" required id="cust-email">
+                                        <span class="icon is-small is-left"><i class="fas fa-envelope"></i></span>
+                                    </div>
+                                </div>
+                                <div class="field">
+                                    <label class="label">Phone Number</label>
+                                    <div class="control has-icons-left">
+                                        <input class="input" type="tel" placeholder="e.g. +1555..." required id="cust-phone">
+                                        <span class="icon is-small is-left"><i class="fas fa-phone"></i></span>
+                                    </div>
+                                </div>
+                                <div class="field">
+                                    <label class="label">New Password</label>
+                                    <div class="control has-icons-left">
+                                        <input class="input" type="password" placeholder="********" required id="cust-password">
+                                        <span class="icon is-small is-left"><i class="fas fa-lock"></i></span>
+                                    </div>
+                                </div>
+                                <div class="field">
+                                    <button class="button is-primary is-fullwidth">Reset Password</button>
+                                </div>
+                            </form>
+                            <div class="notification is-hidden mt-3" id="cust-status"></div>
+                        </div>
+
+                        <!-- Admin Recovery -->
+                        <div id="admin-tab" class="content-tab" style="display: none;">
+                            <p class="mb-4">Recover your admin account using your recovery code.</p>
+                            <form id="admin-recovery-form">
+                                <div class="field">
+                                    <label class="label">Username</label>
+                                    <div class="control has-icons-left">
+                                        <input class="input" type="text" placeholder="admin" required id="admin-username">
+                                        <span class="icon is-small is-left"><i class="fas fa-user"></i></span>
+                                    </div>
+                                </div>
+                                <div class="field">
+                                    <label class="label">Recovery Code</label>
+                                    <div class="control has-icons-left">
+                                        <input class="input" type="text" placeholder="CODE" required id="admin-code">
+                                        <span class="icon is-small is-left"><i class="fas fa-key"></i></span>
+                                    </div>
+                                </div>
+                                <div class="field">
+                                    <label class="label">New Password</label>
+                                    <div class="control has-icons-left">
+                                        <input class="input" type="password" placeholder="********" required id="admin-password">
+                                        <span class="icon is-small is-left"><i class="fas fa-lock"></i></span>
+                                    </div>
+                                </div>
+                                <div class="field">
+                                    <button class="button is-primary is-fullwidth">Reset Password</button>
+                                </div>
+                            </form>
+                            <div class="notification is-hidden mt-3" id="admin-status"></div>
+                        </div>
+                    </div>
+                    <div class="has-text-centered"><a href="/login-customer">Back to Login</a></div>
+                </div>
+            </div>
+        </div>
+    </section>
+    <script src="/assets/runtime/client/assets/js/theme_config.js"></script>
+    <script src="/assets/runtime/client/assets/js/recovery.js"></script>
+</body>
+</html>
