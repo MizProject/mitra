@@ -140,7 +140,8 @@ const db = new sqlite3.Database(dbPath, (err) => {
         // Check if the database schema is up to date.
         const requiredSchema = {
             'customers': ['address_line1', 'address_line2', 'city', 'state_province', 'postal_code', 'country'],
-            'bookings': ['pickup_method', 'return_method', 'schedule_date', 'schedule_time']
+            'bookings': ['pickup_method', 'return_method', 'schedule_date', 'schedule_time'],
+            'page_config': ['opening_time', 'closing_time']
         };
 
         Object.entries(requiredSchema).forEach(([table, columns]) => {
@@ -176,6 +177,10 @@ const db = new sqlite3.Database(dbPath, (err) => {
                 db.run("ALTER TABLE reviews ADD COLUMN booking_id INTEGER", () => {});
             }
         });
+
+        // Ensure page_config has time columns
+        db.run("ALTER TABLE page_config ADD COLUMN opening_time TEXT DEFAULT '09:00'", () => {});
+        db.run("ALTER TABLE page_config ADD COLUMN closing_time TEXT DEFAULT '17:00'", () => {});
     }
 });
 
@@ -925,7 +930,7 @@ app.post('/api/validate-recovery-code', (req, res) => {
 
 app.get('/api/get-site-config', (req, res) => {
     debugLogWriteToFile("Received request for /api/get-site-config");
-    const sql = 'SELECT page_name, primary_color, secondary_color, page_logo, banner_image, currency_symbol FROM page_config WHERE config_id = 1';
+    const sql = 'SELECT page_name, primary_color, secondary_color, page_logo, banner_image, currency_symbol, opening_time, closing_time FROM page_config WHERE config_id = 1';
 
     db.get(sql, [], (err, row) => {
         if (err) {
@@ -1025,7 +1030,7 @@ app.post('/api/admin/site-config', upload.fields([{ name: 'logo', maxCount: 1 },
         return res.status(401).json({ error: "Administrator not authenticated." });
     }
 
-    const { siteName, primaryColor, secondaryColor, currencySymbol, remove_logo, remove_banner } = req.body;
+    const { siteName, primaryColor, secondaryColor, currencySymbol, remove_logo, remove_banner, openingTime, closingTime } = req.body;
     const logoFile = req.files['logo'] ? req.files['logo'][0] : null;
     const bannerFile = req.files['banner'] ? req.files['banner'][0] : null;
 
@@ -1052,6 +1057,9 @@ app.post('/api/admin/site-config', upload.fields([{ name: 'logo', maxCount: 1 },
 
     if (bannerFile) { sql += `, banner_image = ?`; params.push(bannerPath); }
     else if (remove_banner === 'true') { sql += `, banner_image = NULL`; }
+
+    if (openingTime) { sql += `, opening_time = ?`; params.push(openingTime); }
+    if (closingTime) { sql += `, closing_time = ?`; params.push(closingTime); }
 
     sql += ` WHERE config_id = 1`;
 
@@ -1423,54 +1431,68 @@ app.post('/api/customer/create-booking', (req, res) => {
         return res.status(400).json({ error: "Booking request must contain at least one item." });
     }
 
-    // 2. Database Transaction: Use a transaction to ensure all-or-nothing insertion.
-    db.serialize(() => {
-        db.run("BEGIN TRANSACTION");
-
-        // 3. Fetch Prices & Calculate Total: Get prices from DB to prevent client-side tampering.
-        const serviceIds = items.map(item => item.service_id);
-        const placeholders = serviceIds.map(() => '?').join(',');
-        const priceCheckSql = `SELECT service_id, base_price FROM services WHERE service_id IN (${placeholders})`;
-
-        db.all(priceCheckSql, serviceIds, (err, services) => {
-            if (err) {
-                db.run("ROLLBACK");
-                return res.status(500).json({ error: "Failed to verify service prices." });
+    // Check business hours
+    db.get('SELECT opening_time, closing_time FROM page_config WHERE config_id = 1', (err, config) => {
+        if (err) {
+            debugLogWriteToFile(`Database error fetching site config for booking: ${err.message}`);
+            return res.status(500).json({ error: "Failed to verify business hours." });
+        }
+        
+        if (config && config.opening_time && config.closing_time && schedule_time) {
+            if (schedule_time < config.opening_time || schedule_time > config.closing_time) {
+                return res.status(400).json({ error: `Our service hours are from ${config.opening_time} to ${config.closing_time}. Please choose a valid time.` });
             }
+        }
 
-            let totalPrice = 0;
-            const priceMap = new Map(services.map(s => [parseInt(s.service_id, 10), s.base_price]));
+        // 2. Database Transaction: Use a transaction to ensure all-or-nothing insertion.
+        db.serialize(() => {
+            db.run("BEGIN TRANSACTION");
 
-            for (const item of items) {
-                if (!priceMap.has(item.service_id)) {
-                    db.run("ROLLBACK");
-                    return res.status(400).json({ error: `Invalid service_id provided: ${item.service_id}` });
-                }
-                totalPrice += priceMap.get(item.service_id) * item.quantity;
-            }
+            // 3. Fetch Prices & Calculate Total: Get prices from DB to prevent client-side tampering.
+            const serviceIds = items.map(item => item.service_id);
+            const placeholders = serviceIds.map(() => '?').join(',');
+            const priceCheckSql = `SELECT service_id, base_price FROM services WHERE service_id IN (${placeholders})`;
 
-            // 4. Create Booking Record
-            const bookingSql = 'INSERT INTO bookings (customer_id, total_price, status, pickup_method, return_method, schedule_date, schedule_time) VALUES (?, ?, ?, ?, ?, ?, ?)';
-            db.run(bookingSql, [customerId, totalPrice, 'Pending', pickup_method, return_method, schedule_date, schedule_time], function(err) {
+            db.all(priceCheckSql, serviceIds, (err, services) => {
                 if (err) {
                     db.run("ROLLBACK");
-                    return res.status(500).json({ error: "Failed to create booking record." });
+                    return res.status(500).json({ error: "Failed to verify service prices." });
                 }
-                const bookingId = this.lastID;
 
-                // 5. Create Booking Items Records
-                const itemSql = 'INSERT INTO booking_items (booking_id, service_id, quantity, price_at_time_of_booking) VALUES (?, ?, ?, ?)';
-                const itemStmt = db.prepare(itemSql);
+                let totalPrice = 0;
+                const priceMap = new Map(services.map(s => [parseInt(s.service_id, 10), s.base_price]));
+
                 for (const item of items) {
-                    itemStmt.run(bookingId, item.service_id, item.quantity, priceMap.get(item.service_id));
+                    if (!priceMap.has(item.service_id)) {
+                        db.run("ROLLBACK");
+                        return res.status(400).json({ error: `Invalid service_id provided: ${item.service_id}` });
+                    }
+                    totalPrice += priceMap.get(item.service_id) * item.quantity;
                 }
-                itemStmt.finalize((err) => {
+
+                // 4. Create Booking Record
+                const bookingSql = 'INSERT INTO bookings (customer_id, total_price, status, pickup_method, return_method, schedule_date, schedule_time) VALUES (?, ?, ?, ?, ?, ?, ?)';
+                db.run(bookingSql, [customerId, totalPrice, 'Pending', pickup_method, return_method, schedule_date, schedule_time], function(err) {
                     if (err) {
                         db.run("ROLLBACK");
-                        return res.status(500).json({ error: "Failed to save booking items." });
+                        return res.status(500).json({ error: "Failed to create booking record." });
                     }
-                    db.run("COMMIT");
-                    res.status(201).json({ message: "Booking created successfully.", bookingId: bookingId });
+                    const bookingId = this.lastID;
+
+                    // 5. Create Booking Items Records
+                    const itemSql = 'INSERT INTO booking_items (booking_id, service_id, quantity, price_at_time_of_booking) VALUES (?, ?, ?, ?)';
+                    const itemStmt = db.prepare(itemSql);
+                    for (const item of items) {
+                        itemStmt.run(bookingId, item.service_id, item.quantity, priceMap.get(item.service_id));
+                    }
+                    itemStmt.finalize((err) => {
+                        if (err) {
+                            db.run("ROLLBACK");
+                            return res.status(500).json({ error: "Failed to save booking items." });
+                        }
+                        db.run("COMMIT");
+                        res.status(201).json({ message: "Booking created successfully.", bookingId: bookingId });
+                    });
                 });
             });
         });

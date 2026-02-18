@@ -1,6 +1,8 @@
 document.addEventListener('DOMContentLoaded', () => {
     const siteNameInput = document.getElementById('site-name');
     const currencySymbolInput = document.getElementById('currency-symbol');
+    const openingTimeInput = document.getElementById('opening-time');
+    const closingTimeInput = document.getElementById('closing-time');
     const logoInput = document.getElementById('site-logo');
     const bannerInput = document.getElementById('site-banner');
     const saveButton = document.getElementById('save-config-button');
@@ -20,6 +22,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (config.page_name) siteNameInput.value = config.page_name;
             if (config.currency_symbol) currencySymbolInput.value = config.currency_symbol;
+            if (config.opening_time) openingTimeInput.value = config.opening_time;
+            if (config.closing_time) closingTimeInput.value = config.closing_time;
             if (config.primary_color) currentPrimaryColor = config.primary_color;
             if (config.secondary_color) currentSecondaryColor = config.secondary_color;
 
@@ -116,6 +120,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const formData = new FormData();
         formData.append('siteName', siteNameInput.value);
         formData.append('currencySymbol', currencySymbolInput.value);
+        formData.append('openingTime', openingTimeInput.value);
+        formData.append('closingTime', closingTimeInput.value);
         formData.append('primaryColor', currentPrimaryColor);
         formData.append('secondaryColor', currentSecondaryColor);
         formData.append('remove_logo', removeLogoFlag);
